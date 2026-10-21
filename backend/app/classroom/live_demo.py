@@ -43,7 +43,7 @@ def source_manifest():
 
 def distribution_versions():
     versions = {"python": sys.version.split()[0]}
-    for name in ("openai", "httpx", "fastapi", "SQLAlchemy", "PyJWT", "pandas", "numpy"):
+    for name in ("openai", "httpx", "httpx2", "fastapi", "SQLAlchemy", "PyJWT", "pandas", "numpy"):
         try:
             versions[name] = version(name)
         except PackageNotFoundError:
@@ -180,7 +180,7 @@ def configure(profile, grant, key):
         CONTROLS_INFERENCE_TOTAL_MICROUNITS=str(profile["total_microunits"]),
         DIALOGUE_ENABLED="0",
     )
-    for name in ("openai", "httpx", "httpcore"):
+    for name in ("openai", "httpx", "httpcore", "httpx2", "httpcore2"):
         logging.getLogger(name).setLevel(logging.CRITICAL)
 
 

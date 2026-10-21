@@ -72,3 +72,18 @@ short handoffs and deterministic checks. Do not repeat successful unchanged
 checks or reconstruct old chats without a specific unresolved question. The
 [historical preparation](history/classroom-b1-source-preparation-2026-10-21.md)
 and coordinator's private execution artifacts retain the detailed provenance.
+
+## MCP direction (21 October, proposed integration)
+
+EduCloud should own the learner/course tool allowlist, authorization, admission,
+budget and audit boundary. Exa supplies public-source discovery; existing MESA
+MCP services are optional data/metadata/research adapters. Begin with read-only
+capabilities and test denied/revoked access, bounded results, citations and tool
+outages. Keep device telemetry, private learner guidance and grade authority
+outside Exa/MESA tools. No broad tool catalog or automatic server installation.
+
+One connected Exa lookup returned two official MCP authorization pages using
+public query data only. This establishes connector connectivity, not integration
+into Belay's governed execution. No MESA resource, collection, OAuth entitlement
+or institutional deployment was exercised. Keep MESA acceptance separate from
+the current noninstitutional synthetic demonstration.

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-"""Hermetic live-profile controls: no real SDK, credential, endpoint or container."""
+"""Offline live-profile controls: synthetic credentials, no endpoint or container calls."""
 
 import hashlib
 import json
@@ -227,7 +227,8 @@ def test_reformat_preserves_wire_caps_effort_and_exact_accounting(live, ledger):
             call["store"] is False
             and call["stream"] is False
             and call["n"] == 1
-            and call["tools"] == []
+            and "tools" not in call
+            and "tool_choice" not in call
         )
         assert "max_tokens" not in call and "temperature" not in call and "extra_body" not in call
     records = [
@@ -302,6 +303,12 @@ def test_transport_failures_never_retry_or_log_error_text(live, ledger, caplog, 
         '{"flagged":"false","confidence":0.9}',
         '{"flagged":false}',
         '{"flagged":false,"confidence":2}',
+        '{"flagged":false,"confidence":null}',
+        '{"flagged":false,"confidence":true}',
+        '{"flagged":false,"confidence":false}',
+        '{"flagged":false,"confidence":"0.9"}',
+        '{"flagged":false,"confidence":NaN}',
+        '{"flagged":false,"confidence":Infinity}',
         "not json",
         "[]",
     ],
@@ -1245,3 +1252,182 @@ def test_dedicated_purge_refuses_a_sibling_database(purge_installation, monkeypa
         sibling.dispose()
     assert _purge_state(installation) == before
     assert json.loads((installation.directory / "authorization.json").read_text())["subjects"]
+
+
+@pytest.fixture
+def real_sdk_client(monkeypatch):
+    """Construct the installed SDK to exercise its http_client type check, no request."""
+    from app.classroom.live_provider import make_client
+
+    profile = read_profile()
+    monkeypatch.setattr(settings, "openai_api_key", "synthetic_sdk_construction_key_001")
+    client = make_client(profile)
+    try:
+        yield profile, client
+    finally:
+        client.close()
+        assert client._client.is_closed
+
+
+def test_real_sdk_client_uses_compatible_bounded_transport(real_sdk_client):
+    import httpx2
+    from openai import DefaultHttpxClient
+
+    profile, client = real_sdk_client
+    http_client = client._client
+    assert isinstance(http_client, DefaultHttpxClient)
+    assert isinstance(http_client, httpx2.Client)
+    assert client.max_retries == 0
+    assert http_client.follow_redirects is False and http_client.trust_env is False
+    assert http_client._mounts == {}  # No environment-proxy transports.
+    assert all(
+        getattr(http_client.timeout, kind) == float(profile["http_wall_seconds"])
+        for kind in ("connect", "read", "write", "pool")
+    )
+    transport = http_client._transport
+    assert isinstance(transport, httpx2.BaseTransport)
+    assert isinstance(transport.inner, httpx2.HTTPTransport)
+    assert transport.inner._pool._retries == 0
+    assert transport.inner._pool._max_connections == 1
+    assert transport.inner._pool._max_keepalive_connections == 1
+
+
+def test_sdk_transport_rejects_incompatible_default_client(monkeypatch):
+    import httpx
+    import openai
+
+    from app.classroom.live_provider import make_client
+
+    monkeypatch.setattr(openai, "DefaultHttpxClient", httpx.Client)
+    with pytest.raises(ControlError, match="live_sdk_transport_incompatible"):
+        make_client(read_profile())
+
+
+@pytest.mark.parametrize("overflow", [False, True])
+def test_real_sdk_transport_enforces_stream_byte_cap_without_network(
+    real_sdk_client, monkeypatch, overflow
+):
+    import httpx2
+
+    profile, client = real_sdk_client
+    transport = client._client._transport
+    transport.inner.close()  # No open connections; replace only the inner network seam.
+    closed, requests = [], []
+
+    class Source(httpx2.SyncByteStream):
+        def __iter__(self):
+            yield b"x" * profile["max_http_response_bytes"]
+            if overflow:
+                yield b"y"
+
+        def close(self):
+            closed.append(True)
+
+    def handle(request):
+        requests.append(str(request.url))
+        return httpx2.Response(200, stream=Source())
+
+    monkeypatch.setattr(transport, "inner", NS(handle_request=handle, close=lambda: None))
+    endpoint = profile["base_url"] + "/chat/completions"
+    response = transport.handle_request(httpx2.Request("POST", endpoint))
+    try:
+        assert isinstance(response.stream, httpx2.SyncByteStream)
+        if overflow:
+            with pytest.raises(ControlError, match="live_response_byte_limit"):
+                response.read()
+        else:
+            assert len(response.read()) == profile["max_http_response_bytes"]
+    finally:
+        response.close()
+    assert requests == [endpoint] and closed
+
+
+def test_real_sdk_transport_rejects_other_endpoint_before_inner_send(real_sdk_client, monkeypatch):
+    import httpx2
+
+    _, client = real_sdk_client
+    transport = client._client._transport
+    transport.inner.close()
+    requests = []
+    monkeypatch.setattr(
+        transport,
+        "inner",
+        NS(handle_request=lambda request: requests.append(request), close=lambda: None),
+    )
+    with pytest.raises(ControlError, match="live_endpoint_mismatch"):
+        transport.handle_request(
+            httpx2.Request("POST", "https://wrong-endpoint.invalid/chat/completions")
+        )
+    assert requests == []
+
+
+def test_distribution_metadata_reports_actual_live_http_client():
+    from importlib.metadata import version
+
+    from app.classroom.live_demo import distribution_versions
+
+    reported = distribution_versions()
+    assert reported["httpx2"] == version("httpx2")
+    assert reported["httpx"] == version("httpx")  # Separate TestClient dependency retained.
+
+
+def test_bounded_process_reads_selector_stable_fd(monkeypatch):
+    import selectors
+
+    from app.classroom import live_runner
+
+    class Pipe:
+        def __init__(self, fd):
+            self.fd = fd
+
+        def fileno(self):
+            return self.fd
+
+        def close(self):
+            pass
+
+    class Process:
+        def __init__(self):
+            self.stdout, self.stderr = Pipe(11), Pipe(12)
+            self.returncode = None
+
+        def wait(self, timeout):
+            self.returncode = 0
+            return 0
+
+        def poll(self):
+            return self.returncode
+
+        def kill(self):
+            self.returncode = -9
+
+    class Selector:
+        def __init__(self):
+            self.keys = {}
+
+        def register(self, fileobj, events, data):
+            fd = fileobj.fileno()
+            self.keys[fd] = selectors.SelectorKey(fd, fd, events, data)
+
+        def unregister(self, fileobj):
+            self.keys.pop(fileobj)
+
+        def get_map(self):
+            return self.keys
+
+        def select(self, timeout):
+            return [(key, selectors.EVENT_READ) for key in self.keys.values()]
+
+        def close(self):
+            pass
+
+    reads = {11: [b"bounded output", b""], 12: [b""]}
+    monkeypatch.setattr(live_runner.subprocess, "Popen", lambda *args, **kwargs: Process())
+    monkeypatch.setattr(live_runner.selectors, "DefaultSelector", Selector)
+    monkeypatch.setattr(live_runner.os, "read", lambda fd, size: reads[fd].pop(0))
+    assert live_runner.bounded_process(["synthetic-never-executed"], 1, 64) == (
+        0,
+        b"bounded output",
+        b"",
+        None,
+    )

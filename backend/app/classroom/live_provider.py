@@ -146,8 +146,12 @@ class LiveRun:
 
 
 def make_client(profile):
-    import httpx
-    from openai import OpenAI
+    import httpx2 as httpx
+    from openai import DefaultHttpxClient, OpenAI
+
+    if not issubclass(DefaultHttpxClient, httpx.Client):
+        raise ControlError("live_sdk_transport_incompatible", 503)
+    timeout = float(profile["http_wall_seconds"])
 
     class LimitedStream(httpx.SyncByteStream):
         def __init__(self, stream):
@@ -166,7 +170,11 @@ def make_client(profile):
 
     class BoundedTransport(httpx.BaseTransport):
         def __init__(self):
-            self.inner = httpx.HTTPTransport(retries=0, trust_env=False)
+            self.inner = httpx.HTTPTransport(
+                retries=0,
+                trust_env=False,
+                limits=httpx.Limits(max_connections=1, max_keepalive_connections=1),
+            )
 
         def handle_request(self, request):
             if str(request.url) != profile["base_url"] + "/chat/completions":
@@ -182,13 +190,13 @@ def make_client(profile):
         base_url=profile["base_url"],
         api_key=settings.openai_api_key,
         max_retries=0,
-        timeout=profile["http_wall_seconds"],
-        http_client=httpx.Client(
+        timeout=timeout,
+        http_client=DefaultHttpxClient(
             transport=BoundedTransport(),
             follow_redirects=False,
             trust_env=False,
-            timeout=profile["http_wall_seconds"],
-            limits=httpx.Limits(max_connections=1),
+            timeout=timeout,
+            limits=httpx.Limits(max_connections=1, max_keepalive_connections=1),
         ),
     )
 
@@ -290,7 +298,6 @@ class LiveClassroomProvider(OpenAICompatProvider):
                 stream=False,
                 n=1,
                 service_tier="default",
-                tools=[],
                 extra_headers={"X-Client-Request-Id": attempt_id},
             )
             try:
@@ -391,10 +398,11 @@ class LiveClassroomProvider(OpenAICompatProvider):
                     confidence = parsed.get("confidence")
                     if (
                         type(parsed.get("flagged")) is not bool
-                        or type(confidence) not in {int, float}
-                        or not math.isfinite(confidence)
-                        or not 0 <= confidence <= 1
+                        or isinstance(confidence, bool)
+                        or not isinstance(confidence, (int, float))
                     ):
+                        raise ControlError("live_classifier_invalid", 503)
+                    if not math.isfinite(confidence) or not 0 <= confidence <= 1:
                         raise ControlError("live_classifier_invalid", 503)
                 return parsed
             if role == "classifier":

@@ -154,7 +154,7 @@ def bounded_process(command, seconds, byte_cap):
                 reason = "timeout"
                 break
             for key, _ in selector.select(min(0.1, remaining)):
-                chunk = os.read(key.fileobj.fileno(), 4096)
+                chunk = os.read(key.fd, 4096)
                 if not chunk:
                     selector.unregister(key.fileobj)
                     continue
