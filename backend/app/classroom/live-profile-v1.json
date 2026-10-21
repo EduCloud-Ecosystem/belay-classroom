@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "profile_id": "info511-openai-one-turn-v1",
+  "status": "requires_exact_review_and_root_grant",
+  "exercise_id": "info511-lab3-q4-synthetic",
+  "exercise_version": "info511-lab3-q4-synthetic-v1",
+  "teaching_policy_id": "info511-hints-v1",
+  "provider": "openai_compatible",
+  "base_url": "https://api.openai.com/v1",
+  "model": "gpt-6-luna",
+  "service_tier": "default",
+  "learner": "bob",
+  "max_turns": 1,
+  "max_attempts": 19,
+  "max_messages_bytes": 16384,
+  "max_http_response_bytes": 65536,
+  "aggregate_tokens": 341252,
+  "stages": {
+    "classifier": {
+      "http_attempts": 1,
+      "output_tokens": 100
+    },
+    "planner": {
+      "http_attempts": 2,
+      "output_tokens": 400
+    },
+    "reasoner": {
+      "http_attempts": 8,
+      "output_tokens": 800
+    },
+    "self_eval": {
+      "http_attempts": 8,
+      "output_tokens": 400
+    }
+  },
+  "price_version": "openai-gpt6luna-standard-20261021-rounded-up-v1",
+  "input_price_microunits_per_token": 1,
+  "output_price_microunits_per_token": 1,
+  "total_microunits": 350000,
+  "http_wall_seconds": 15,
+  "max_window_seconds": 900,
+  "max_refine": 1,
+  "max_escalate": 1,
+  "max_worked_example_retry": 1,
+  "injection_guard_enabled": true,
+  "distress_routing_enabled": true,
+  "runner_calls": 8,
+  "runner_wall_ms": 168000,
+  "runner": {
+    "image_id": "sha256:7bd11b08999a9d227539029473f3dfb057e82245675611df7cf203f0984e2a58",
+    "docker_binary": "/usr/bin/docker",
+    "wall_seconds": 20,
+    "cpu_seconds": 10,
+    "memory_mb": 512,
+    "pids": 32,
+    "tmpfs_bytes": 67108864,
+    "stdio_bytes_each": 65536,
+    "input_bytes": 262144,
+    "input_files": 5
+  },
+  "budget_note": "$0.35 provisional inference reservation within $20 total, retaining separate $0.01 smoke hold. Final P1 source/profile hash review and root grant remain pending. Prices are rounded-up reservation prices, not an invoice. Existing admitted CPU host only."
+}

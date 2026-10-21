@@ -1,0 +1,19 @@
+{
+  "profile_sha256": "ROOT_FILL_EXACT_PROFILE_HASH",
+  "source_sha256": "ROOT_FILL_VALIDATE_SOURCE_HASH",
+  "p1_profile_approved": false,
+  "p1_review_path": "ROOT_FILL_ABSOLUTE_REVIEW_FILE_PATH",
+  "p1_review_sha256": "ROOT_FILL_EXACT_REVIEW_HASH",
+  "root_execution_authorized": false,
+  "runner_admitted": false,
+  "runner_admission_evidence": "ROOT_FILL_OPAQUE_EVIDENCE_ID",
+  "reservation_id": "ROOT_FILL_DISTINCT_035_USD_RESERVATION_ID",
+  "request_id": "ROOT_CHOOSE_ONE_REQUEST_ID",
+  "deployment_id": "ROOT_CHOOSE_UNIQUE_DEPLOYMENT",
+  "data_dir": "ROOT_FILL_ABSOLUTE_NEW_PRIVATE_DIRECTORY",
+  "not_before": 0,
+  "expires_at": 0,
+  "reserved_microunits": 350000,
+  "root_budget_total_microunits": 20000000,
+  "other_held_or_spent_microunits": 10000
+}
