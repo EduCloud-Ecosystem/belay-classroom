@@ -194,7 +194,8 @@ def test_saved_route_cannot_inherit_client_oracle(
 
 
 @pytest.mark.parametrize("prefix", ["/api", "/quad/v1"])
-def test_private_http_closed_fields_and_isolation(classroom, prefix):
+@pytest.mark.parametrize("untrusted_field", ["prompt", "grade", "grade_write", "score"])
+def test_private_http_closed_fields_and_isolation(classroom, prefix, untrusted_field):
     app = FastAPI()
     app.include_router(build_router(prefix))
     client = TestClient(app)
@@ -210,7 +211,7 @@ def test_private_http_closed_fields_and_isolation(classroom, prefix):
                 "action": "enable",
                 "request_id": "request_000000001",
                 "notice_version": NOTICE,
-                "prompt": "not collected",
+                untrusted_field: "not collected",
             },
         ).status_code
         == 422

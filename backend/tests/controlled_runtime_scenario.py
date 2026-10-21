@@ -136,7 +136,10 @@ def get_status(prefix, request_id):
 
 curriculum = client.get("/api/curriculum")
 expect(curriculum.status_code == 200)
-expect(len([e for m in curriculum.json()["modules"] for e in m["exercises"]]) == 3)
+expect(
+    [e["id"] for m in curriculum.json()["modules"] for e in m["exercises"]]
+    == ["ds-foundations", "info511-lab3-q4-synthetic", "ds-regression", "ds-mlp"]
+)
 run = client.post(
     "/api/run",
     json={"participant_id": "gh:12345", "exercise_id": "ds-foundations", "source": "print(7)"},

@@ -33,10 +33,20 @@ Full lint/format/types, regression suites, Postgres matrix, real API/worker and 
 
 ## Next concrete outcome
 
-1. Confirm the corrected eight accounting assertions against frozen new-repository source; retain earlier failures and the unchanged 46-control evidence.
+1. Run the focused CI-repair checks below, then the required quality gates and both database matrix legs. Retain the initial CI failures and the unchanged earlier evidence.
 2. Execute trusted instructor examples, retain the six-row missingness failure and nine-row repair, then qualify actual notebook execution separately.
 3. Build a versioned live-provider adapter with finite input/output/attempt/currency bounds and trusted subject/request correlation. Never replace the prepared stub silently.
 4. Demonstrate the existing synthetic submission/review/export journey and inspect the learner interface. A scripted synthetic reviewer is labeled as such; it is not human acceptance.
+
+## CI-repair checkpoint (2026-10-21)
+
+- Checkout `/Users/gregchism/dev/belay-classroom`, branch `codex/live-classroom-demonstration`, base `f53b8f19e0e445d9a0caedc734c048c383664134`; changes are uncommitted.
+- Initial CI run `39683572861` failed five tests on both SQLite and Postgres. All three controlled-runtime provider scenarios stopped at the obsolete three-exercise catalog count, before their adapter/accounting assertions. The launcher test also expected the old catalog; the sidecar inventory omitted the intentional private classroom GET/POST route. Full original logs remain in the coordinator's execution/verification directory.
+- Reused the existing exact catalog and route inventories, adding only the synthetic exercise and private route. Extended the existing private-route closed-field controls to reject grade/score inputs. No authorization, governance, provider, accounting or grade-write behavior changed.
+- The mypy failure was the untyped nested Git helper in `app/classroom/csv_check.py`; its arguments and bytes return now declare the existing subprocess contract.
+- Dirty tracked paths: `backend/app/classroom/csv_check.py`, `backend/tests/controlled_runtime_scenario.py`, `backend/tests/test_local_dev_cors.py`, `backend/tests/test_quad_sidecar.py`, `backend/tests/test_classroom_policy.py`, and this record. The six pre-existing untracked live-provider/profile/test/document files are preserved without edits.
+- Verification at this source-only checkpoint: AST parsing and whitespace inspection only. Runtime, Ruff and mypy remain pending with the coordinator; no pytest, service, build, network or model execution was admitted here.
+- Next command from `backend/`: `python -m pytest tests/test_controlled_runtime.py::test_real_registered_adapter_saved_unsaved_run_recovery_auth_and_accounting tests/test_local_dev_cors.py tests/test_quad_sidecar.py tests/test_classroom_policy.py tests/test_classroom_checker.py -q`. Then run the existing full quality gates and SQLite/Postgres CI matrix; do not treat this source correction as a passing run.
 
 ## Working efficiently
 
