@@ -1,0 +1,10 @@
+{
+  "id": "info511-lab3-q4-synthetic",
+  "data_files": ["data/info511-inflation-synthetic.csv"],
+  "checks": [{
+    "type": "tidy_source_cells",
+    "source_file": "data/info511-inflation-synthetic.csv",
+    "source_var": "country_inflation",
+    "var": "tidy_inflation"
+  }]
+}

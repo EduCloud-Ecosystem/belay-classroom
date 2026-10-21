@@ -106,6 +106,11 @@ class Settings:
         default_factory=lambda: int(_env("DIALOGUE_PENDING_SECONDS", "120"))
     )
 
+    # Explicit synthetic private-store lifecycle; no default migration or scheduler.
+    classroom_cleanup_enabled: bool = field(
+        default_factory=lambda: _envbool("CLASSROOM_CLEANUP_ENABLED", False)
+    )
+
     # --- Model/inference provider seam -------------------------------------
     # PROVIDER selects the inference provider (and is recorded in the §6 telemetry
     # `provider` field). The fast/strong TIER POLICY (which component uses which

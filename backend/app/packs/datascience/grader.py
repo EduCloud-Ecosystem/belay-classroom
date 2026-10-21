@@ -80,6 +80,9 @@ def grade(source: str, exercise: Exercise) -> RunResult:
     ex_id = exercise.get("id", "")
     spec = load_spec(ex_id)
     files = _stage_data(spec)
+    if any(c["type"] == "tidy_source_cells" for c in spec.get("checks", [])):
+        with open(os.path.join(_HERE, "tidy_check.py"), encoding="utf-8") as fh:
+            files["tidy_check.py"] = fh.read()
     files["student.py"] = source
     files["spec.json"] = json.dumps(spec)
 

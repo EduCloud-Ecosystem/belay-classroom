@@ -6,7 +6,7 @@
   const base = () => $("backend").value.replace(/\/$/, "");
   const glassBox = $("glass-box"), signalsStorage = $("signals-storage");
   const assignedStance = new URL(window.location.href).searchParams.get("stance") || "peer";
-  const stance = ["peer", "oracle", "control"].includes(assignedStance) ? assignedStance : "peer";
+  let stance = ["peer", "oracle", "control"].includes(assignedStance) ? assignedStance : "peer";
   let exercises = {}, dialogue, scope, identity, lastResult = null, busy = false, generation = 0;
   const askJobs = globalThis.belayAskJobs();
   let temporaryMessages = [], recent = [], savedView = false;
@@ -15,6 +15,12 @@
   let records = [], activeRecord = null, feedMessages = [], requestTarget = null;
   let savedConversation = null, glassOwner = null;
   let selectedReply = null;
+  const classroom = window.BelayClassroom?.mount({
+    container:$("classroom-guidance"), base,
+    onRetry:() => { if ($("exercise").value === "info511-lab3-q4-synthetic") { stance = "peer"; $("mode").value = "study"; $("question").focus?.(); } },
+    context:() => identity ? {...identity, exercise_id:$("exercise").value,
+      exercise_version:exercises[$("exercise").value]?.exercise_version} : null
+  });
   const defaultQuestionPlaceholder = $("question").getAttribute("placeholder") || "Ask Sol something specific (optional)…";
   function renderQuote(target, source) {
     const text = String(source || "");
@@ -111,6 +117,7 @@
     renderFeed(feedMessages);
   }
   function recordFailure(error, fallback) {
+    classroom?.refresh();
     const record = records.find(r => r.request_id === error.request_id) || fallback;
     if (!record) return;
     record.feedback = error.uncertain ? "unknown" : error.code === "result_expired" ? "result_expired" : "blocked";
@@ -254,6 +261,7 @@
     $("glass-approach").textContent = "";
   }
   function clearTransient() {
+    classroom?.clear();
     removeReply();
     records = []; activeRecord = null; requestTarget = null; feedMessages = [];
     temporaryMessages = []; recent = []; lastResult = null;
@@ -272,6 +280,7 @@
     }
     savedConversation = session.cid;
     scope = session.key; savedView = session.enabled; identity = session.config.identity;
+    classroom?.refresh();
     historyContext = JSON.stringify([session.key, session.cid, session.revision]);
     if (savedView) {
       if (liveContext !== historyContext) clearTelemetry(messages.length
@@ -366,6 +375,7 @@
       lastResult = await json("/api/run", {participant_id: learner,
         exercise_id: $("exercise").value, source: $("source").value});
       renderRunResult(lastResult);
+      classroom?.refresh();
       const studentError = lastResult.pack?.execution_status === "student_error";
       record.result = lastResult;
       record.execution = lastResult.ok ? (lastResult.goalMet === false ? "checks_failed" : "completed")

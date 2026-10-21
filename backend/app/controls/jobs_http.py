@@ -148,7 +148,10 @@ def build_jobs_router(prefix: str, pack) -> APIRouter:
 
     @api.post("", status_code=202)
     def submit(request: Request, body: AskSubmission):
+        from ..classroom.policy import enforce
+
         identity = request.state.identity
+        enforce(identity, body.model_dump(), observe=True)
         try:
             pack.get_exercise(identity.exercise_id)
         except KeyError:

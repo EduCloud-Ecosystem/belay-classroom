@@ -8,6 +8,7 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 import jwt
 from fastapi import Depends, HTTPException, Request
@@ -25,11 +26,20 @@ class Membership(BaseModel):
     assignments: dict[str, str]
 
 
+class TeachingPolicy(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    exercise_version: str = Field(pattern=r"^[A-Za-z0-9_.:-]{1,64}$")
+    policy_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    mode: Literal["hints_only"]
+    retention_seconds: int = Field(ge=60, le=86400)
+
+
 class Authorization(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     # Operator binds each exercise in the installed pack to its deployed version.
     exercise_versions: dict[str, str]
     subjects: dict[str, list[Membership]]
+    teaching_policies: dict[str, TeachingPolicy] = Field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -185,6 +195,12 @@ def _configuration() -> tuple[str, Authorization]:
         if any(
             not opaque.fullmatch(ex) or not opaque.fullmatch(version)
             for ex, version in authorization.exercise_versions.items()
+        ):
+            raise ValueError
+        if any(
+            not opaque.fullmatch(ex)
+            or authorization.exercise_versions.get(ex) != p.exercise_version
+            for ex, p in authorization.teaching_policies.items()
         ):
             raise ValueError
         if any(not re.fullmatch(r"[A-Za-z0-9_.:-]{1,128}", sub) for sub in authorization.subjects):

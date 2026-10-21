@@ -28,6 +28,26 @@ class Execution:
     guard: Callable[[], None] | None = None
 
 
+_attempt_guards: contextvars.ContextVar[tuple[Callable[[], None], ...]] = contextvars.ContextVar(
+    "attempt_guards", default=()
+)
+
+
+@contextmanager
+def attempt_guard(guard: Callable[[], None]) -> Iterator[None]:
+    """Supplement existing accounting guards, including provider-internal retries."""
+    token = _attempt_guards.set((*_attempt_guards.get(), guard))
+    try:
+        yield
+    finally:
+        _attempt_guards.reset(token)
+
+
+def _check_attempt_guards() -> None:
+    for guard in _attempt_guards.get():
+        guard()
+
+
 _execution: contextvars.ContextVar[Execution | None] = contextvars.ContextVar(
     "control_execution", default=None
 )
@@ -46,6 +66,7 @@ def operation(
 
 
 def current() -> Execution | None:
+    _check_attempt_guards()
     context = _execution.get()
     if context is not None:
         if context.guard:
@@ -102,6 +123,7 @@ def model_call(
         context.ledger.settle(attempt_id, Amount())
         raise
     try:
+        _check_attempt_guards()
         if context.guard:
             context.guard()
         if settings.controls_inference_expires_at:
@@ -189,6 +211,7 @@ def runner_call(call: Callable[[], T], wall_seconds: float) -> T:
         context.ledger.settle(attempt_id, Amount())
         raise
     try:
+        _check_attempt_guards()
         if context.guard:
             context.guard()
     except BaseException:

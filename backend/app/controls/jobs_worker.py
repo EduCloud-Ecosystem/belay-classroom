@@ -129,6 +129,10 @@ def start_worker(*, poll_seconds: float = 0.2):
                     adapter.cleanup()
                     if time.monotonic() >= next_cleanup:
                         history.cleanup()  # Also applies when optional saving is disabled.
+                        if settings.classroom_cleanup_enabled:
+                            from ..classroom.store import configured_store
+
+                            configured_store().cleanup()
                         next_cleanup = time.monotonic() + 30
                     if run_one(store.admission, adapter):
                         continue

@@ -3,6 +3,10 @@
 globalThis.belayControlMessage = function (detail, retryAfter) {
   const code = detail && typeof detail === "object" ? detail.code : "";
   const messages = {
+    hints_only: "This assignment permits hints and debugging questions. Choose Study and the peer tutor, then retry. Your work is unchanged; you can challenge the private alert in Classroom guidance.",
+    prediction_required: "Before asking for hints, write your predicted schema and observational unit in your notebook, then record the checkpoint in Classroom guidance. This is a completion reminder.",
+    teaching_policy_unavailable: "Assignment tutoring policy is unavailable. Continue independent work and contact course support; this is a service issue.",
+    classroom_state_unavailable: "Private classroom guidance is unavailable. Continue independent work; required access and usage controls remain active.",
     poll_limited: "Status was checked too recently. Waiting before checking the same request again; your draft has not been sent.",
     provider_auth_failed: "Sol could not generate feedback because the model service rejected its credentials. Please contact course support. Your draft has been kept.",
     request_not_admitted: "The previous request was not accepted and is now closed. No question was resent. You can choose Ask Sol to submit your current question or discuss the latest run.",

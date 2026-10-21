@@ -1,13 +1,14 @@
-# peer-tutor-framework
+# Belay Classroom
 
-A generalizable, evaluation-first peer-tutor framework. Its defining property: the
-tutor cannot leak an exercise solution because a deterministic, executable Governance
-gate runs the draft through the active domain's grader and strips any full solution,
-rather than merely asking the model not to.
+An AI-native classroom demonstration derived from [Belay](https://github.com/EduCloud-Ecosystem/belay). The initial activity combines independent notebook work, hints-only tutoring, explicit submission, and private guidance that supports remediation. It uses synthetic identities and data.
 
-> The repository name `peer-tutor-framework` is a placeholder. The settled name
-> is **Belay** (see `../educloud/SYSTEM.md`); it is applied in a single atomic
-> commit at the publish step.
+This repository is the home for new classroom-specific work. Belay remains separate. Start with [the current change record](docs/development/classroom-b1.md) and [the focused workflow](docs/development/codex-workflow.md).
+
+The source is an initial development import, not an accepted classroom service. The direct OpenAI transport smoke passed; integrated tutoring, the full submission/review journey, accessibility and release checks remain pending. See [provenance and verification](docs/development/fork-provenance.md).
+
+## Inherited framework
+
+The sections below describe the inherited framework. Capability descriptions do not establish acceptance of this classroom demonstration.
 
 ## What it is
 

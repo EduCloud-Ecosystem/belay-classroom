@@ -148,6 +148,14 @@ def build_router(
             meta["exercise_version"],
         ):
             raise denied()
+        from ..classroom.policy import enforce
+
+        bound = replace(
+            request.state.identity,
+            exercise_id=meta["exercise_id"],
+            exercise_version=meta["exercise_version"],
+        )
+        enforce(bound, body.model_dump(), observe=True)
         if len(body.message.encode()) > store().policy.max_message_bytes:
             raise HTTPException(413, "message limit exceeded")
         payload = {
@@ -218,6 +226,9 @@ def build_router(
         identity = replace(
             identity, exercise_id=meta["exercise_id"], exercise_version=meta["exercise_version"]
         )
+        from ..classroom.policy import enforce, guard_provider, guarded_turn
+
+        enforce(identity, body.model_dump(), observe=True)
         try:
             exercise = pack.get_exercise(identity.exercise_id)
         except KeyError:
@@ -261,10 +272,15 @@ def build_router(
                 "_reply_context": quote,
                 "reply_to": body.reply_to.model_dump() if body.reply_to else None,
             }
-            provider = llm_factory()
+            provider = guard_provider(identity, payload, llm_factory())
             bounded = BoundedProvider(provider, repository.policy) if provider is not None else None
             released = await run_in_threadpool(
-                tutor, payload, bounded, scoped_store(consent_router, identity)
+                guarded_turn,
+                identity,
+                payload,
+                tutor,
+                bounded,
+                scoped_store(consent_router, identity),
             )
             # Only the final learner-facing response released by the existing gate.
             message = str(released["message"])
@@ -277,6 +293,14 @@ def build_router(
                 message, question = PLACEHOLDER, None
             # Re-read credentials and current membership after the model call.
             fresh = await authorize(request, await _bearer(request))
+            enforce(
+                replace(
+                    fresh,
+                    exercise_id=identity.exercise_id,
+                    exercise_version=identity.exercise_version,
+                ),
+                payload,
+            )
             result = repository.complete(
                 fresh, cid, body.request_id, {"message": message, "check_question": question}
             )

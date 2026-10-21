@@ -155,11 +155,19 @@ def run(request: Request, req: RunRequest):
                 {"source": req.source, "result": result},
             )
         )
+    from .classroom.policy import record_check
+
+    observation = record_check(request.state.identity, result)
+    if observation is not None:
+        return {**result, "classroom": observation}
     return result
 
 
 @app.post("/api/sol/turn", dependencies=[Depends(authorize)], response_model=StudentTurnResponse)
 def sol_turn(request: Request, req: SolTurnRequest):
+    from .classroom.policy import enforce, guard_provider, guarded_turn
+
+    enforce(request.state.identity, req.model_dump(), observe=True)
     control_context()
     if req.reply_to:
         raise HTTPException(409, {"code": "reply_unavailable"})
@@ -183,7 +191,14 @@ def sol_turn(request: Request, req: SolTurnRequest):
     # Route events + learner-state writes to durable or ephemeral by consent.
     store = scoped_store(_router, request.state.identity)
     try:
-        released = run_turn(payload, _llm(), store)
+        released = guarded_turn(
+            request.state.identity,
+            payload,
+            run_turn,
+            guard_provider(request.state.identity, payload, _llm()),
+            store,
+        )
+        enforce(request.state.identity, payload)
         return {
             "message": released["message"],
             "check_question": released.get("check_question"),
@@ -259,3 +274,9 @@ def set_overlay(request: Request, req: OverlayRequest):
     store = scoped_store(_router, request.state.identity)
     artifact = overlay_mod.set_overlay(store, req.participant_id, req.overlay)
     return {"participant_id": req.participant_id, "overlay": artifact}
+
+
+# Explicit grants and schema preparation are required; no monitoring default is enabled.
+from .classroom.router import build_router as build_classroom_router
+
+app.include_router(build_classroom_router("/api"))

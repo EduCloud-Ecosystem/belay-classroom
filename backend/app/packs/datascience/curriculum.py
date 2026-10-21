@@ -61,6 +61,33 @@ EXERCISES: list[dict] = [
     },
 ]
 
+
+# Explicitly granted synthetic classroom exercise; no original course data or solution.
+EXERCISES.append(
+    {
+        "id": "info511-lab3-q4-synthetic",
+        "module": "wrangling-eda",
+        "order": 4,
+        "prereqs": [],
+        "title": "INFO511 Lab 3 Q4 · Synthetic tidying rehearsal",
+        "concept": "observational units, reshaping and missingness",
+        "goalText": "Preserve every source cell in a country/year table.",
+        "prompt": (
+            "SYNTHETIC rehearsal data, not the course dataset. First predict the output "
+            "schema and observational unit in your notebook. Use melt() or pivot_table() "
+            "to create tidy_inflation with columns country, year, annual_inflation. "
+            "Use integer years; preserve every value and missing cell and leave "
+            "country_inflation unchanged. Display the result and its dimensions. "
+            "Write your own explanation; hints may not supply the assessed pipeline."
+        ),
+        "starter": (
+            "import pandas as pd\n"
+            'country_inflation = pd.read_csv("data/info511-inflation-synthetic.csv")\n'
+            "# Write your prediction and your own reshaping code.\n"
+        ),
+    }
+)
+
 # One module per stratum (thin v0). Exercises attach to their stratum module.
 MODULES: list[dict] = [
     {

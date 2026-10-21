@@ -133,6 +133,9 @@ def build_router(
 
     @api.post("/turn", dependencies=[Depends(authorize)])
     def turn(request: Request, payload: dict = Body(...)):
+        from ...classroom.policy import enforce, guard_provider, guarded_turn
+
+        enforce(request.state.identity, payload, observe=True)
         try:
             control_context()
         except ControlError as exc:
@@ -174,7 +177,14 @@ def build_router(
             register(consent_router, request.state.identity, req.consent)
         store = scoped_store(consent_router, request.state.identity)
         try:
-            released = run_turn(turn_payload, _llm(), store)
+            released = guarded_turn(
+                request.state.identity,
+                turn_payload,
+                run_turn,
+                guard_provider(request.state.identity, turn_payload, _llm()),
+                store,
+            )
+            enforce(request.state.identity, turn_payload)
             return {
                 "message": released["message"],
                 "check_question": released.get("check_question"),
@@ -262,6 +272,9 @@ def build_router(
     from ...controls.jobs_http import build_jobs_router
 
     api.include_router(build_jobs_router("/jobs", pack))
+    from ...classroom.router import build_router as build_classroom_router
+
+    api.include_router(build_classroom_router(""))
     return api
 
 

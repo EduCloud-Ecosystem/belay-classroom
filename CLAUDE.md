@@ -1,7 +1,8 @@
 # EduCloud ecosystem — shared conventions
 
-This repo (`belay`) is the AI peer tutor of the EduCloud ecosystem, an
-open-source GitHub Classroom replacement. Siblings: `cairn` (classroom/LMS),
+This repo (`belay-classroom`) is the classroom demonstration derived from Belay.
+Upstream `belay` remains the separate AI peer tutor in the EduCloud ecosystem.
+Classroom-specific changes belong here; preserve upstream provenance and licenses. Siblings: `cairn` (classroom/LMS),
 `portage` (LLM routing engine), `outfitter` (compute broker), `waypoint`
 (hosting/identity), `educloud` (umbrella strategy/decisions/SYSTEM.md).
 `portage-local` is a separate personal deployment, currently on hold — not

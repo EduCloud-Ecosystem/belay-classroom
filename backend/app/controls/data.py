@@ -152,6 +152,12 @@ class ExecutionData:
         connection: Connection | None = None,
         conversation_id: str | None = None,
     ) -> dict:
+        from ..classroom.policy import enforce
+
+        # Saved submission already owns the ledger transaction. Optional tracking
+        # must not open a second writer on that same SQLite database; the HTTP
+        # admission boundary records the event before this transaction starts.
+        enforce(identity, payload, observe=connection is None, operation_id=request_id)
         grant = execution_grant(identity)
         stored = temporary_input(payload)
         recheck_grant(grant)
@@ -244,6 +250,9 @@ class ExecutionData:
             identity = recheck_grant(self._grant(conn, job["id"]))
             saved.check(self, conn, job["id"], identity)
             payload = self._get(conn, job["id"], job["payload_ref"], "input")
+            from ..classroom.policy import enforce
+
+            enforce(identity, payload, trusted_support=payload.get("_support") is True)
             if payload.get("reply_to"):
                 binding = saved.link(conn, job["id"])
                 payload["_reply_context"] = self.resolve_reply(
@@ -267,6 +276,9 @@ class ExecutionData:
             identity = recheck_grant(self._grant(conn, job["id"]))
             conversation = saved.check(self, conn, job["id"], identity)
             payload = self._get(conn, job["id"], job["payload_ref"], "input")
+            from ..classroom.policy import enforce
+
+            enforce(identity, payload, trusted_support=payload.get("_support") is True)
             value = {
                 "message": value["message"],
                 "check_question": value.get("check_question"),
@@ -319,7 +331,10 @@ class ExecutionData:
             self.admission._live(conn, job["id"], job["fence"])
             identity = recheck_grant(self._grant(conn, job["id"]))
             saved.check(self, conn, job["id"], identity)
-            self._get(conn, job["id"], job["payload_ref"], "input")
+            payload = self._get(conn, job["id"], job["payload_ref"], "input")
+            from ..classroom.policy import enforce
+
+            enforce(identity, payload, trusted_support=payload.get("_support") is True)
             value = self._get(conn, job["id"], ref, "pending")
             if not isinstance(value.get("message"), str) or not value["message"].strip():
                 raise ControlError("invalid_result", 502)

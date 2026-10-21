@@ -1,0 +1,15 @@
+{
+  "exercise_versions": {"info511-lab3-q4-synthetic": "info511-lab3-q4-synthetic-v1"},
+  "teaching_policies": {
+    "info511-lab3-q4-synthetic": {
+      "exercise_version": "info511-lab3-q4-synthetic-v1",
+      "policy_id": "info511-hints-v1",
+      "mode": "hints_only",
+      "retention_seconds": 3600
+    }
+  },
+  "subjects": {
+    "synthetic-one": [{"institution_id": "synthetic-inst", "class_id": "synthetic-class", "learner_id": "edu:1", "assignments": {"info511-lab3-q4-synthetic": "info511-lab3-q4-synthetic-v1"}}],
+    "synthetic-two": [{"institution_id": "synthetic-inst", "class_id": "synthetic-class", "learner_id": "edu:2", "assignments": {"info511-lab3-q4-synthetic": "info511-lab3-q4-synthetic-v1"}}]
+  }
+}

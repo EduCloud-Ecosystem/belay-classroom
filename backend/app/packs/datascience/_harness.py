@@ -12,9 +12,11 @@ Declarative check types (convergent with Quad pkg/gradingspec — see GRADING_SP
   function_contract | metric_threshold | var_threshold
 """
 
+import ast
 import contextlib
 import io
 import json
+import runpy
 import traceback
 
 import numpy as np
@@ -57,9 +59,26 @@ def _cmp(value, op, threshold):
     raise ValueError(f"unknown op {op!r}")
 
 
-def _run_check(chk, ns, stdout_text):
+def _run_check(chk, ns, stdout_text, references=None, student_src="", tidy_checker=None):
     """Return (ok: bool, primary_metric: float|None, detail: str)."""
     t = chk["type"]
+    if t == "tidy_source_cells":
+        ok, detail = tidy_checker(
+            references[chk["source_file"]], ns.get(chk["source_var"]), ns.get(chk["var"])
+        )
+        if ok:
+            # A syntactic requirement check, NOT proof of execution or authorship.
+            calls = [n for n in ast.walk(ast.parse(student_src)) if isinstance(n, ast.Call)]
+            if not any(
+                isinstance(n.func, ast.Attribute) and n.func.attr in {"melt", "pivot_table"}
+                for n in calls
+            ):
+                return (
+                    False,
+                    None,
+                    "method: use the assignment's melt() or pivot_table() requirement.",
+                )
+        return ok, None, detail
     if t == "stdout_contains":
         return (chk["text"] in stdout_text), None, ""
     if t == "stdout_equals":
@@ -120,6 +139,17 @@ def main():
     spec = json.loads(_load("spec.json"))
     student_src = _load("student.py")
 
+    # Snapshot source data before executing the learner's code.
+    references = {}
+    tidy_checker = None
+    for chk in spec.get("checks", []):
+        if chk["type"] == "tidy_source_cells":
+            import pandas as pd
+
+            references[chk["source_file"]] = pd.read_csv(chk["source_file"])
+            # The inherited runner uses Python -I: staged files are not on
+            # sys.path. Load the trusted helper before learner code executes.
+            tidy_checker = runpy.run_path("tidy_check.py")["check_tidy"]
     ns = {"__name__": "__student__"}
     buf = io.StringIO()
     err = None
@@ -141,7 +171,9 @@ def main():
     if err is None:
         for chk in spec.get("checks", []):
             try:
-                ok, primary, detail = _run_check(chk, ns, stdout_text)
+                ok, primary, detail = _run_check(
+                    chk, ns, stdout_text, references, student_src, tidy_checker
+                )
             except Exception as exc:  # noqa: BLE001
                 ok, primary, detail = False, None, f"{type(exc).__name__}: {exc}"
             if primary is not None:
