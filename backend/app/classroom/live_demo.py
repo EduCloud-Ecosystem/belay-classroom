@@ -11,13 +11,13 @@ import math
 import os
 import re
 import stat
+import sys
 import tempfile
 import time
-import sys
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-from .demo import EXERCISE, POLICY, VERSION, authorization, bind_learner, check_binding
+from .demo import EXERCISE, VERSION, authorization, bind_learner, check_binding
 
 PROFILE = Path(__file__).with_name("live-profile-v1.json")
 BACKEND = Path(__file__).parents[2]

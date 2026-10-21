@@ -705,7 +705,8 @@ def queued_real_loop(live, ledger, monkeypatch, tmp_path):
     from app.auth import Identity, Membership, _grant_ref
     from app.classroom import policy as teaching
     from app.classroom.demo import EXERCISE, VERSION, authorization
-    from app.classroom.store import PrivateStore, metadata as private_metadata
+    from app.classroom.store import PrivateStore
+    from app.classroom.store import metadata as private_metadata
     from app.controls.data import ExecutionData
     from app.controls.jobs_worker import AskAdapter
     from app.core.registry import get_active_pack
