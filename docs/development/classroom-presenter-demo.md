@@ -186,3 +186,13 @@ rendered notebook/proxy acceptance remain root-owned gates. Changed frontend
 files are the auth, API, Ask, conversation and classroom-guidance clients,
 development HTML/JS, the new notebook-context adapter and their relevant tests.
 This record is the only documentation change.
+
+Recovery follow-up on 22 October: a known uncertain notebook request now exposes
+a recovery-only status action after reload, even without snapshot memory. This
+action calls the scoped receipt lookup directly and cannot enter a new Ask or
+consume an operator continuation. Missing receipts, changed recovery scopes,
+authentication changes and completed turns keep a new request gated. New controls
+cover timeout followed by an explicit same-ID check, expiry, continuation,
+missing receipt and scope/authentication changes. Root's focused notebook/live
+page controls and shared recovery/auth controls passed; full current-source CI
+and rendered interruption/recovery acceptance remain required before delivery.

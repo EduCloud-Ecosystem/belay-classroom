@@ -31,6 +31,7 @@
   let exercises = {}, dialogue, scope, identity, lastResult = null, busy = false, generation = 0;
   const askJobs = globalThis.belayAskJobs(demo ? {uuid:() => demo.request_id} : undefined);
   let temporaryMessages = [], recent = [], savedView = false;
+  let unsavedRecoveryScope = null;
   let historyContext = null, liveContext = null;
   let localBusy = false, sessionBusy = false;
   let records = [], activeRecord = null, feedMessages = [], requestTarget = null;
@@ -45,6 +46,10 @@
   function demoBlocked() {
     return (notebookRequired && !notebookValid) ||
       (demoPresent && (!demo || !demoReady || demoCompleted || Date.now() >= demo.expires_at * 1000));
+  }
+  function canCheckUnsaved() {
+    return notebookRequired && demo && demoReady && !demoCompleted && identity &&
+      !savedView && scope && unsavedRecoveryScope === scope;
   }
   function updateDemo() {
     if (!demoPresent && !notebookRequired) return;
@@ -309,6 +314,7 @@
     removeReply();
     records = []; activeRecord = null; requestTarget = null; feedMessages = [];
     temporaryMessages = []; recent = []; lastResult = null;
+    unsavedRecoveryScope = null;
     $("status").textContent = "";
     $("question").value = ""; $("result").textContent = "Run your code to see its output.";
     clearTelemetry();
@@ -378,7 +384,7 @@
     if (demoPresent || notebookRequired) {
       $("run").disabled = $("exercise").disabled = $("backend").disabled = true;
       if (demo) $("source").readOnly = $("question").readOnly = true;
-      $("ask").disabled = busy || demoBlocked();
+      $("ask").disabled = busy || (demoBlocked() && !canCheckUnsaved());
       updateDemo();
     }
   }
@@ -495,7 +501,14 @@
     }
   }
   async function ask(event = "chat") {
-    if (busy || !dialogue || demoBlocked()) { updateBusy(); return; }
+    if (busy || !dialogue) { updateBusy(); return; }
+    if (event === "chat" && canCheckUnsaved()) {
+      // A reload loses the selected snapshot. Check only the scoped receipt;
+      // askJobs.ask could admit a new turn via an operator continuation.
+      await recoverUnsaved();
+      return;
+    }
+    if (demoBlocked()) { updateBusy(); return; }
     if (event === "chat" && selectedReply && !$("question").value.trim()) {
       $("question").focus();
       return;
@@ -561,6 +574,8 @@
           : "Recovered the original request. Your current input was not submitted.") : "";
     } catch (error) {
       if (requestGeneration === generation) {
+        if (!savedView) unsavedRecoveryScope = error.uncertain && error.request_id && (notebookRequired || !error.continuationAllowed)
+          ? originalScope : null;
         recordFailure(error, record);
         let message = error.message;
         if (event === "run" && error.code !== "result_expired") {
@@ -570,7 +585,7 @@
           message = (lastResult?.ok ? "Code ran. " : "Your code raised an error. ") + context + message;
         }
         $("status").textContent = message;
-        $("ask").textContent = error.uncertain && !error.continuationAllowed ? "Check request status" : "Ask Belay";
+        $("ask").textContent = canCheckUnsaved() || (error.uncertain && !error.continuationAllowed) ? "Check request status" : "Ask Belay";
       }
     }
     finally { setBusy(false); }
@@ -589,6 +604,8 @@
       const answer = await askJobs.recover(base(), "/api/sol/jobs", $("exercise").value,
         (state, config, ref) => {if (current === generation && currentScope === scope) requestState(state, ref);});
       if (current !== generation || currentScope !== scope) return;
+      unsavedRecoveryScope = null;
+      $("ask").textContent = "Ask Belay";
       if (answer) {
         const ref = askJobs.reference(answer);
         if (answer.reply_to) {
@@ -603,9 +620,12 @@
         if (demo) demoCompleted = true;
         $("status").textContent = "Recovered the same request. No request was resubmitted.";
       }
-    } catch (error) { if (current === generation) {
+    } catch (error) { if (current === generation && currentScope === scope) {
+      if (error.phase !== "configuration") unsavedRecoveryScope = error.uncertain && error.request_id && (notebookRequired || !error.continuationAllowed)
+        ? currentScope : null;
       recordFailure(error, null); $("status").textContent = error.message;
-      $("ask").textContent = error.uncertain && !error.continuationAllowed ? "Check request status" : "Ask Belay";
+      $("ask").textContent = unsavedRecoveryScope === currentScope || (error.uncertain && !error.continuationAllowed)
+        ? "Check request status" : "Ask Belay";
     } }
     finally { setBusy(false); }
   }
@@ -622,6 +642,7 @@
   });
   window.addEventListener("belay-auth-changed", () => {
     generation++; identity = null; scope = null; clearTransient(); renderFeed([]);
+    updateBusy();
   });
   $("presenter-policy")?.addEventListener("click", () => {
     if (!demo || busy || demoBlocked()) return;

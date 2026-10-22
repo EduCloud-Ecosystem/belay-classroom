@@ -60,7 +60,10 @@ async function setup(state={}) {
   const window={location:{href:'https://host.invalid'+(state.search||'')},BELAY_AUTH_ORIGIN:'https://belay.invalid',
     BELAY_GET_ACCESS_TOKEN:async()=>'short-lived-token',BELAY_LEARNER_ID:'gh:1',
     BELAY_INSTITUTION_ID:'inst-a',BELAY_CLASS_ID:'class-a',crypto:{randomUUID:()=>`request-${++state.serial}`},
-    addEventListener:(event,handler)=>handlers[event]=handler,
+    addEventListener:(event,handler)=>{
+      const previous=handlers[event];
+      handlers[event]=previous ? (...args)=>Promise.all([previous(...args),handler(...args)]) : handler;
+    },
     localStorage:{getItem:key=>state.entries.get(key)||null,setItem:(key,value)=>state.entries.set(key,value),removeItem:key=>state.entries.delete(key)}};
   if (Object.hasOwn(state,'demoMetadata')) window.BELAY_CLASSROOM_DEMO=state.demoMetadata;
   if(Object.hasOwn(state,'notebookContext')) {
@@ -92,7 +95,7 @@ async function setup(state={}) {
     if(url.endsWith('/api/curriculum')) result={modules:[{exercises:[exercise]}]};
     else if(url.endsWith('/jobs/config')) {
       if(state.jobsConfigCode) {status=503;result={detail:{code:state.jobsConfigCode}};}
-      else result={operator_continuations:state.operatorContinuations||[],...(state.missingRecovery ? {missing_request_recovery:1} : {}),...(state.legacyJobs ? {} : {reply_references:{version:1,passages:false}}),recovery_scope:'a'.repeat(64),learner_id:state.identity.learner_id,
+      else result={operator_continuations:state.operatorContinuations||[],...(state.missingRecovery ? {missing_request_recovery:1} : {}),...(state.legacyJobs ? {} : {reply_references:{version:1,passages:false}}),recovery_scope:state.jobsRecoveryScope||'a'.repeat(64),learner_id:state.identity.learner_id,
         assignments,poll_seconds:1,result_seconds:300,notice:'Temporary recovery'};
     }
     else if(url.includes('/jobs/by-request/')) {
@@ -1040,6 +1043,92 @@ test('notebook reload recovers an existing request without capture memory, repla
   assert.ok(bubbles(restored).some(bubble => bubble.innerHTML.includes('Live answer')));
   assert.equal(restored.nodes.ask.disabled,true);
   assert.equal(restored.nodes['notebook-source'].textContent,'');
+});
+test('notebook reload timeout permits explicit same-request recovery without a snapshot, even after expiry',async()=>{
+  const state=notebookFixture();state.unknown=true;
+  const first=await setup(state);await importNotebook(first);await first.nodes.ask.fire('click');
+  const receipt=JSON.stringify([...state.entries]);
+  state.unknown=false;state.testPolling=true;state.timeoutMs=1000;state.pollStates=['running'];
+  const restored=await setup({...state,noOpener:true});
+  await pollPaused(restored);
+  restored.state.now=Date.now()+2000;releasePoll(restored);
+  for(let i=0;i<20;i++) await tick();
+  assert.equal(restored.nodes.ask.textContent,'Check request status');
+  assert.equal(restored.nodes.ask.disabled,false);
+  assert.equal(restored.nodes['notebook-source'].textContent,'');
+  assert.equal(JSON.stringify([...state.entries]),receipt);
+  assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
+  // Even support authorization to continue must never turn this button into a new POST.
+  restored.state.operatorContinuations=[state.demoMetadata.request_id];
+  restored.state.now=(state.demoMetadata.expires_at+1)*1000;restored.state.expire();
+  assert.equal(restored.nodes.ask.disabled,false);assert.equal(restored.nodes.run.disabled,true);
+  await restored.nodes.ask.fire('click');
+  const lookups=restored.calls.filter(c=>c.url.includes('/jobs/by-request/'));
+  assert.ok(lookups.length>=2);
+  assert.ok(lookups.every(c=>c.url.endsWith('/by-request/'+state.demoMetadata.request_id)));
+  assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
+  assert.ok(bubbles(restored).some(bubble=>bubble.innerHTML.includes('Live answer')));
+  assert.match(restored.nodes.status.textContent,/No request was resubmitted/);
+  assert.equal(restored.nodes.ask.disabled,true);
+  await restored.nodes.ask.fire('click');
+  assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
+});
+for(const changed of ['removed receipt','rotated recovery scope']) {
+  test(`notebook status check with ${changed} cannot create a turn without a snapshot`,async()=>{
+    const state=notebookFixture();state.unknown=true;
+    const first=await setup(state);await importNotebook(first);await first.nodes.ask.fire('click');
+    const restored=await setup({...state,noOpener:true});
+    assert.equal(restored.nodes.ask.disabled,false);
+    const before=restored.calls.length;
+    const receipt=JSON.stringify([...state.entries]);
+    restored.state.operatorContinuations=[state.demoMetadata.request_id];
+    if(changed==='removed receipt') state.entries.clear();
+    else restored.state.jobsRecoveryScope='c'.repeat(64);
+    await restored.nodes.ask.fire('click');
+    assert.equal(restored.calls.slice(before).some(c=>c.url.includes('/jobs/by-request/')),false);
+    assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
+    assert.equal(restored.nodes.ask.disabled,true);
+    if(changed==='removed receipt') assert.equal(state.entries.size,0);
+    else assert.equal(JSON.stringify([...state.entries]),receipt);
+    await restored.nodes.ask.fire('click');await restored.nodes.run.fire('click');
+    assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
+  });
+}
+test('notebook status check never consumes operator continuation to submit a replacement turn',async()=>{
+  const state=notebookFixture();state.unknown=true;
+  const first=await setup(state);await importNotebook(first);await first.nodes.ask.fire('click');
+  const restored=await setup({...state,noOpener:true});
+  assert.equal(restored.nodes.ask.disabled,false);
+  const receipt=JSON.stringify([...state.entries]);
+  restored.state.operatorContinuations=[state.demoMetadata.request_id];
+  await restored.nodes.ask.fire('click');
+  assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
+  assert.equal(JSON.stringify([...state.entries]),receipt);
+  assert.ok(restored.calls.filter(c=>c.url.includes('/jobs/by-request/'))
+    .every(c=>c.url.endsWith('/by-request/'+state.demoMetadata.request_id)));
+  assert.equal(restored.nodes.ask.textContent,'Check request status');
+  assert.equal(restored.nodes.ask.disabled,false);
+  restored.state.unknown=false;
+  await restored.nodes.ask.fire('click');
+  assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
+  assert.equal(restored.nodes.ask.disabled,true);
+});
+test('notebook status permission is cleared on an authentication change and cannot bypass an invalid capture',async()=>{
+  const state=notebookFixture();state.unknown=true;
+  const first=await setup(state);await importNotebook(first);await first.nodes.ask.fire('click');
+  const restored=await setup(state);
+  await importNotebook(restored,{source:'unreviewed edit'});
+  assert.equal(restored.nodes['notebook-source'].textContent,'');
+  assert.equal(restored.nodes.ask.disabled,false); // Only the existing receipt can be checked.
+  const receipt=JSON.stringify([...state.entries]);
+  restored.state.unauthorized=true;
+  await restored.handlers['belay-auth-changed']();
+  assert.equal(restored.nodes.ask.disabled,true);
+  const before=restored.calls.length;
+  await restored.nodes.ask.fire('click');
+  assert.equal(restored.calls.length,before);
+  assert.equal(JSON.stringify([...state.entries]),receipt);
+  assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
 });
 test('notebook bootstrap without a finite live demo disables actions and explains the missing configuration',async()=>{
   const env=await setup({notebookContext:{version:1,origin:'https://host.invalid'}});
