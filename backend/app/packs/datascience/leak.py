@@ -66,9 +66,14 @@ def _word_present(token: str, text: str) -> bool:
 
 def prose_discloses(draft: str, exercise_id: str) -> bool:
     """Deterministic prose-disclosure signal over the draft's prose (code stripped)."""
-    if exercise_id == "info511-lab3-q4-synthetic":
+    if exercise_id in {"info511-lab3-q4-synthetic", "info511-nhanes-wrangling"}:
         # Naming documentation is allowed; supplying an assessed reshaping call is not.
-        if re.search(r"\b(?:melt|pivot_table)\s*\(", draft):
+        operations = (
+            "merge|melt|pivot_table"
+            if exercise_id == "info511-nhanes-wrangling"
+            else "melt|pivot_table"
+        )
+        if re.search(r"\b(?:" + operations + r")\s*\(", draft):
             return True
     prose = redact(draft)
     if not prose:

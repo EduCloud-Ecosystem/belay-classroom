@@ -3,6 +3,7 @@
 
 import hashlib
 import json
+from pathlib import Path
 from types import SimpleNamespace as NS
 
 import pytest
@@ -538,6 +539,7 @@ def test_expiry_after_response_withholds_publication(live, ledger, monkeypatch):
 
 @pytest.mark.parametrize("failure", [None, "timeout", "stdio_limit", "malformed", "teardown"])
 def test_owned_container_teardown_and_verifier_failure_states(live, ledger, monkeypatch, failure):
+    from app.classroom.assignments import EXERCISE
     from app.classroom.live_runner import ROOT
 
     _, run, _, _ = live
@@ -549,19 +551,20 @@ def test_owned_container_teardown_and_verifier_failure_states(live, ledger, monk
         "error": None,
         "checks": [
             {
-                "type": "tidy_source_cells",
+                "type": "nhanes_participant_readings",
                 "ok": False,
-                "detail": "row_count: retain one row for every source country/year cell, including missing cells.",
+                "detail": "row_count: retain three readings for every selected demographic participant, including missing cells.",
             }
         ],
     }
     output = b"__GRADE__" + json.dumps(verdict).encode()
     files = {
-        "spec.json": (ROOT / "packs/datascience/specs/info511-lab3-q4-synthetic.json").read_text(),
-        "tidy_check.py": (ROOT / "packs/datascience/tidy_check.py").read_text(),
-        "data/info511-inflation-synthetic.csv": (
-            ROOT / "packs/datascience/specs/data/info511-inflation-synthetic.csv"
-        ).read_bytes(),
+        "spec.json": (ROOT / "packs/datascience/specs" / (EXERCISE + ".json")).read_text(),
+        "nhanes_check.py": (ROOT / "packs/datascience/nhanes_check.py").read_text(),
+        **{
+            name: (ROOT / "packs/datascience/specs" / name).read_bytes()
+            for name in ("data/DEMO_L_selected.csv", "data/BPXO_L_selected.csv")
+        },
         "student.py": "# synthetic source; never executed in this test",
     }
     calls = []
@@ -637,7 +640,7 @@ def test_owned_container_teardown_and_verifier_failure_states(live, ledger, monk
                 runner_call(lambda: backend(source, files=files), 20)
         else:
             result = runner_call(lambda: backend(source, files=files), 20)
-            assert result.ok and checked_verdict(result.stdout)["goal_met"] is False
+            assert result.ok and checked_verdict(result.stdout, EXERCISE)["goal_met"] is False
     assert "rm" in calls
     if failure == "timeout":
         assert "kill" in calls
@@ -711,7 +714,8 @@ def queued_real_loop(live, ledger, monkeypatch, tmp_path):
     from app.agent import governance, injection_guard, llm
     from app.auth import Identity, Membership, _grant_ref
     from app.classroom import policy as teaching
-    from app.classroom.demo import EXERCISE, VERSION, authorization
+    from app.classroom.assignments import EXERCISE, NHANES, VERSION
+    from app.classroom.demo import authorization
     from app.classroom.store import PrivateStore
     from app.classroom.store import metadata as private_metadata
     from app.controls.data import ExecutionData
@@ -731,7 +735,7 @@ def queued_real_loop(live, ledger, monkeypatch, tmp_path):
         "reasoner_effort_escalated": "high",
     }.items():
         monkeypatch.setattr(settings, name, value)
-    auth = authorization()
+    auth = authorization(*NHANES)
     configure(monkeypatch, tmp_path, auth)
     member = Membership(**auth["subjects"]["synthetic-two"][0])
     identity = Identity(
@@ -808,19 +812,17 @@ def queued_real_loop(live, ledger, monkeypatch, tmp_path):
     monkeypatch.setattr(llm, "_PROVIDERS", dict(llm._PROVIDERS))
     monkeypatch.setattr(injection_guard, "_guard_instance", None)
     install(run)
+    approved_turn = json.loads(
+        (Path(__file__).parent / "fixtures/classroom/nhanes-turn.json").read_text()
+    )
     payload = {
         "participant_id": "edu:2",
         "exercise_id": EXERCISE,
         "mode": "study",
         "stance": "peer",
         "event": "chat",
-        "source": "# Synthetic learner's current work; prediction recorded.\n",
-        "recent": [
-            {
-                "who": "student",
-                "text": "How can I check whether missing source cells survived my reshape?",
-            }
-        ],
+        "source": approved_turn["source"],
+        "recent": [{"who": "student", "text": approved_turn["message"]}],
     }
     job = store.submit(identity, run.grant["request_id"], payload, "/api/sol/jobs")
     assert job["id"] == run.operation
@@ -951,7 +953,12 @@ def test_full_queued_safety_loop_fits_current_live_message_cap(queued_real_loop,
     assert [frame["role"] for frame in frames].count("reasoner") == 8
     assert [frame["role"] for frame in frames].count("self_eval") == 8
     assert len(frames) == queued.run.profile["max_attempts"] == 19
-    assert max(frame["messages_bytes"] for frame in frames) == 14643
+    # Measured with the approved eight-line NHANES cell and actual question;
+    # retain the existing cap, every safety stage and all retrieval passages.
+    assert max(frame["messages_bytes"] for frame in frames) == 15828
+    assert (
+        max(frame["messages_bytes"] for frame in frames) <= queued.run.profile["max_messages_bytes"]
+    )
     assert (
         sum(
             queued.run.profile["max_messages_bytes"] + 1024 + frame["output_tokens"]
@@ -1082,7 +1089,8 @@ def test_launcher_refreshes_bob_token_before_long_job_result_read(
     store = NS(ledger=ledger, admission=NS())
     monkeypatch.setattr(jobs_http, "execution_store", lambda: store)
     monkeypatch.setattr(fastapi.testclient, "TestClient", Client)
-    monkeypatch.setattr(live_demo, "check_binding", lambda directory: None)
+    bindings = []
+    monkeypatch.setattr(live_demo, "check_binding", lambda *args: bindings.append(args[1:]))
     monkeypatch.setattr(live_demo, "bind_learner", lambda runtime, learner: None)
     monkeypatch.setattr(ContainerRunner, "preflight", lambda self: None)
     monkeypatch.setattr(live_provider, "install", lambda run: None)
@@ -1094,6 +1102,9 @@ def test_launcher_refreshes_bob_token_before_long_job_result_read(
     )
     assert result["state"] == "completed"
     assert token_times == [50.0, 351.0] and len(clients) == 1
+    from app.classroom.assignments import NHANES
+
+    assert bindings == [NHANES]
 
 
 @pytest.fixture

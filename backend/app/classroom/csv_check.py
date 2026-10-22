@@ -56,12 +56,19 @@ def check_csv(content: bytes) -> tuple[bool, str]:
     return check_tidy(source, source.copy(), pd.DataFrame(values, columns=rows[0]))
 
 
-def submitted_csv(repository: Path, revision: str, path: str) -> bytes:
+def submitted_csv(
+    repository: Path, revision: str, path: str, *, expected_name="tidy-inflation.csv"
+) -> bytes:
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
         raise ValueError("full immutable commit revision required")
     relative = PurePosixPath(path)
-    if relative.is_absolute() or ".." in relative.parts or relative.name != "tidy-inflation.csv":
-        raise ValueError("explicit relative tidy-inflation.csv path required")
+    if (
+        expected_name not in {"tidy-inflation.csv", "tidy-nhanes.csv"}
+        or relative.is_absolute()
+        or ".." in relative.parts
+        or relative.name != expected_name
+    ):
+        raise ValueError("explicit relative " + expected_name + " path required")
 
     def git(*args: str) -> bytes:
         return subprocess.run(

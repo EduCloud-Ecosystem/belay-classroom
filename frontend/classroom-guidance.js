@@ -14,7 +14,12 @@
       container.replaceChildren(heading, status, content);
       function active() {
         const value = context();
-        return value?.exercise_id === "info511-lab3-q4-synthetic" && value.learner_id ? value : null;
+        const supported = [
+          ["info511-lab3-q4-synthetic", "info511-lab3-q4-synthetic-v1"],
+          ["info511-nhanes-wrangling", "info511-nhanes-wrangling-v1"]
+        ];
+        return value?.learner_id && supported.some(([id, version]) =>
+          value.exercise_id === id && value.exercise_version === version) ? value : null;
       }
       function currentKey() { return JSON.stringify([base(), active()]); }
       function clear() {

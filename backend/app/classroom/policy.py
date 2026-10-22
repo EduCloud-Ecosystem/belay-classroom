@@ -7,23 +7,20 @@ from fastapi import HTTPException
 
 from ..auth import _configuration, denied, execution_grant, recheck_grant
 from ..controls.runtime import attempt_guard
+from .assignments import SUPPORTED
 from .store import configured_store
 
 EXERCISE = "info511-lab3-q4-synthetic"
 
 
 def policy_for(identity):
-    # This bounded slice changes only the explicitly named rehearsal exercise.
-    if identity.exercise_id != EXERCISE:
+    # Only the two explicitly registered teaching fixtures use these controls.
+    if identity.exercise_id not in {item[0] for item in SUPPORTED}:
         return None
     _, authorization = _configuration()
     policy = authorization.teaching_policies.get(identity.exercise_id)
     if policy is None:
-        if identity.exercise_id == EXERCISE:
-            raise HTTPException(
-                503, {"code": "teaching_policy_unavailable", "kind": "service_error"}
-            )
-        return None
+        raise HTTPException(503, {"code": "teaching_policy_unavailable", "kind": "service_error"})
     if (
         authorization.exercise_versions.get(identity.exercise_id) != identity.exercise_version
         or dict(identity.assignments).get(identity.exercise_id) != identity.exercise_version

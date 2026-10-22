@@ -1,0 +1,81 @@
+{
+  "cycle": "NHANES August 2021-August 2023",
+  "release_cycle_code": 12,
+  "adult_cohort": {
+    "definition": "DEMO_L records satisfying 18 <= RIDAGEYR <= 79, before any BP availability filter. This explicitly excludes age-80-plus topcoded records; it is not all adults or a national cohort.",
+    "participants": 7628,
+    "matched_bp": 5995,
+    "unmatched_bp": 1633,
+    "buckets": {
+      "unmatched": 1633,
+      "matched_all_missing": 192,
+      "matched_partial_missing": 18,
+      "matched_complete": 5785
+    },
+    "all_cohort_long_rows": 22884,
+    "all_cohort_long_missing": 5497,
+    "reason_recommended": "Matches the existing donor age definition while preserving unmatched participants and missing readings; avoids the donor complete-case filter."
+  },
+  "missing_value_contract": [
+    "CDC documents numeric dot missing for the selected BP fields; preserve as missing in CSV/pandas, not 0.",
+    "Selected BP fields have no documented refusal/dont-know sentinels; do not apply a generic 7/9/77/99 recode.",
+    "Do not fill missing measurements, average readings, drop incomplete participants, or infer why a particular reading is absent.",
+    "Retain join_status so a missing BP row and a present BP row with missing readings remain distinguishable.",
+    "No observed systolic zero exists in either cached source or selected fixture; fabricate none."
+  ],
+  "survey_boundary": "This task makes no population estimates. Population inference would require current CDC survey weights and design guidance; the selected participants/readings must not be treated as an independent national sample. No blood analytes, clinical thresholds or medical advice.",
+  "sources": {
+    "DEMO_L": {
+      "data_url": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/DEMO_L.xpt",
+      "codebook_url": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/DEMO_L.htm",
+      "sha256": "ca4374a158b493b8b0163e1388da21d57a18d1b9cecff2aa4e2fa2bec494fe23",
+      "bytes": 2582160,
+      "selected_columns": [
+        "SEQN",
+        "RIDAGEYR"
+      ]
+    },
+    "BPXO_L": {
+      "data_url": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/BPXO_L.xpt",
+      "codebook_url": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/BPXO_L.htm",
+      "sha256": "189aa9bed689d2c69cf8d780b01de85073276fea5694dd52cdf696229f9054a6",
+      "bytes": 696720,
+      "selected_columns": [
+        "SEQN",
+        "BPXOSY1",
+        "BPXOSY2",
+        "BPXOSY3"
+      ]
+    }
+  },
+  "selection_rule": [
+    "Form the explicit adult DEMO cohort.",
+    "Left join the three BPXO systolic columns on SEQN with validate=one_to_one and indicator=join_status.",
+    "Partition into disjoint buckets: left_only; both with 3 missing readings; both with 1 or 2 missing readings; both with 0 missing readings.",
+    "Sort each bucket by numeric SEQN ascending. Take first 8 unmatched, first 8 all-missing, first 8 partly-missing, and first 40 complete. Union and sort by SEQN. No randomness.",
+    "Extract DEMO selected columns for those 64 SEQN and BPXO selected columns for the 56 present SEQN. Retain original values and missing positions; introduce no source rows or values."
+  ],
+  "files": {
+    "DEMO_L_selected.csv": {
+      "columns": [
+        "SEQN",
+        "RIDAGEYR"
+      ],
+      "rows": 64,
+      "bytes": 654,
+      "sha256": "4a9c6d40ccbd4cb8a3886b20e2ec506e74c70c8e641347a941b9209f61369587"
+    },
+    "BPXO_L_selected.csv": {
+      "columns": [
+        "SEQN",
+        "BPXOSY1",
+        "BPXOSY2",
+        "BPXOSY3"
+      ],
+      "rows": 56,
+      "bytes": 983,
+      "sha256": "4ae89d264da5da4020fd6e8fdd0171ae188b7ed9191aeb8b18af20b30c1556a9"
+    }
+  },
+  "verified_official_raw_bytes_on": "2026-10-22"
+}

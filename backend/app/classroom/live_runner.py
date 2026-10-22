@@ -17,6 +17,9 @@ from pathlib import Path, PurePosixPath
 from ..controls.contracts import ControlError
 from ..controls.runtime import attempt_reference
 from ..core.runner import RunnerResult
+from ..packs.datascience.nhanes_check import FAILURES as NHANES_FAILURES
+from ..packs.datascience.nhanes_check import SUCCESS as NHANES_SUCCESS
+from .assignments import NHANES
 from .demo import EXERCISE
 from .live_provider import write_evidence
 
@@ -40,16 +43,28 @@ _TIDY_FAILURES = frozenset(
 )
 
 
-def checked_inputs(program, files, artifacts, profile):
+def checked_inputs(program, files, artifacts, profile, exercise=EXERCISE):
     """Only the reviewed grader/harness and current synthetic exercise are staged."""
     if artifacts or not isinstance(files, dict):
         raise ControlError("live_runner_inputs_invalid", 503)
-    expected = {
-        "spec.json": ROOT / "packs/datascience/specs" / (EXERCISE + ".json"),
-        "tidy_check.py": ROOT / "packs/datascience/tidy_check.py",
-        "data/info511-inflation-synthetic.csv": ROOT
-        / "packs/datascience/specs/data/info511-inflation-synthetic.csv",
-    }
+    if exercise == EXERCISE:
+        expected = {
+            "spec.json": ROOT / "packs/datascience/specs" / (EXERCISE + ".json"),
+            "tidy_check.py": ROOT / "packs/datascience/tidy_check.py",
+            "data/info511-inflation-synthetic.csv": ROOT
+            / "packs/datascience/specs/data/info511-inflation-synthetic.csv",
+        }
+    elif exercise == NHANES[0]:
+        expected = {
+            "spec.json": ROOT / "packs/datascience/specs" / (exercise + ".json"),
+            "nhanes_check.py": ROOT / "packs/datascience/nhanes_check.py",
+            **{
+                name: ROOT / "packs/datascience/specs" / name
+                for name in ("data/DEMO_L_selected.csv", "data/BPXO_L_selected.csv")
+            },
+        }
+    else:
+        raise ControlError("live_runner_inputs_invalid", 503)
     if (
         set(files) != {*expected, "student.py"}
         or program != (ROOT / "packs/datascience/_harness.py").read_text()
@@ -82,7 +97,17 @@ def checked_inputs(program, files, artifacts, profile):
     return result
 
 
-def checked_verdict(stdout):
+def checked_verdict(stdout, exercise=EXERCISE):
+    if exercise == EXERCISE:
+        check_type, success, failures = "tidy_source_cells", _TIDY_SUCCESS, _TIDY_FAILURES
+    elif exercise == NHANES[0]:
+        check_type, success, failures = (
+            "nhanes_participant_readings",
+            NHANES_SUCCESS,
+            NHANES_FAILURES,
+        )
+    else:
+        raise ControlError("live_verifier_unavailable", 503)
     lines = stdout.splitlines()
     if len(lines) != 1 or not lines[0].startswith("__GRADE__"):
         raise ControlError("live_verifier_unavailable", 503)
@@ -108,15 +133,15 @@ def checked_verdict(stdout):
             if (
                 error is not None
                 or len(checks) != 1
-                or checks[0].get("type") != "tidy_source_cells"
+                or checks[0].get("type") != check_type
                 or type(checks[0].get("ok")) is not bool
                 or not isinstance(checks[0].get("detail"), str)
                 or value["goalMet"] != checks[0]["ok"]
             ):
                 raise ValueError("invalid check")
             check = checks[0]
-            if (check["ok"] and check["detail"] != _TIDY_SUCCESS) or (
-                not check["ok"] and check["detail"] not in _TIDY_FAILURES
+            if (check["ok"] and check["detail"] != success) or (
+                not check["ok"] and check["detail"] not in failures
             ):
                 raise ValueError("unknown or untruthful checker detail")
         elif not error or value["goalMet"] or value["checks"]:
@@ -265,7 +290,7 @@ class ContainerRunner:
             or memory_mb not in {None, p["memory_mb"]}
         ):
             raise ControlError("live_runner_limits_mismatch", 503)
-        inputs = checked_inputs(program, files, artifacts, p)
+        inputs = checked_inputs(program, files, artifacts, p, run.profile["exercise_id"])
         attempt = attempt_reference()  # Existing outer runner_call reservation.
         name = "belay-live-" + attempt
         work = Path(tempfile.mkdtemp(prefix="belay-live-runner-"))
@@ -395,7 +420,7 @@ class ContainerRunner:
             exit_code = info["State"]["ExitCode"]
             if reason or info["State"]["OOMKilled"] or exit_code != 0:
                 raise ControlError("live_verifier_unavailable", 503)
-            verdict = checked_verdict(stdout.decode("utf-8", "strict"))
+            verdict = checked_verdict(stdout.decode("utf-8", "strict"), run.profile["exercise_id"])
             evidence.update(verdict=verdict, outcome="verified_execution_finished")
         finally:
             try:

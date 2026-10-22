@@ -1137,3 +1137,28 @@ test('notebook bootstrap without a finite live demo disables actions and explain
   assert.match(env.nodes['presenter-notice'].textContent,/configuration unavailable/);
   assert.equal(env.calls.length,0);
 });
+
+test('NHANES uses its exact assignment pair and captured source; another version cannot submit',async()=>{
+  const state=notebookFixture();
+  const turn=JSON.parse(fs.readFileSync(path.join(root,'../backend/tests/fixtures/classroom/nhanes-turn.json'),'utf8'));
+  Object.assign(state.demoMetadata,{exercise_id:'info511-nhanes-wrangling',
+    exercise_version:'info511-nhanes-wrangling-v1',message:turn.message,source:turn.source});
+  state.demoExercise={...state.demoExercise,id:state.demoMetadata.exercise_id,
+    exercise_version:state.demoMetadata.exercise_version,title:'NHANES public teaching subset'};
+  const env=await setup(state);
+  assert.equal(env.nodes.ask.disabled,true);
+  await importNotebook(env);
+  assert.equal(env.nodes.ask.disabled,false);
+  await env.nodes.ask.fire('click');
+  const posts=env.calls.filter(call=>call.url.endsWith('/api/sol/jobs')&&call.options.method==='POST');
+  assert.equal(posts.length,1);
+  const payload=JSON.parse(posts[0].options.body);
+  assert.equal(payload.exercise_id,'info511-nhanes-wrangling');
+  assert.equal(payload.exercise_version,'info511-nhanes-wrangling-v1');
+  assert.equal(payload.source,turn.source);
+  const invalid=await setup({...state,demoMetadata:{...state.demoMetadata,exercise_version:'unknown'}});
+  assert.equal(invalid.handlers.message,undefined);
+  assert.equal(invalid.nodes.ask.disabled,true);
+  await invalid.nodes.ask.fire('click');
+  assert.equal(invalid.calls.some(call=>call.options.method==='POST'),false);
+});

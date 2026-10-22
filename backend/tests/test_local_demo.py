@@ -131,5 +131,11 @@ def test_launcher_environment_explicit_local_and_memory(tmp_path, monkeypatch):
     assert env["BELAY_ENV"] == "local" and env["STORE_BACKEND"] == "memory"
     assert env["TUTOR_PACK"] == "_skeleton"
     assert env["CORS_ORIGINS"] == "http://127.0.0.1:5174,http://localhost:5174"
-    assert "private" not in " ".join(env[k] for k in env if k.startswith("AUTH_"))
+    assert env["AUTH_PUBLIC_KEY_FILE"] == str(identity.public_key_file)
+    assert env["AUTH_AUTHORIZATION_FILE"] == str(identity.authorization_file)
+    # macOS temporary paths start with /private; inspect key material and names,
+    # rather than treating that ordinary filesystem prefix as a leaked secret.
+    auth = {k: v for k, v in env.items() if k.startswith("AUTH_")}
+    assert not any("PRIVATE_KEY" in key for key in auth)
+    assert not any("PRIVATE KEY-----" in value for value in auth.values())
     assert TOKEN_PATH in bootstrap(8001)

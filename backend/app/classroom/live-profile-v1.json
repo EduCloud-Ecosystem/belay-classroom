@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "profile_id": "info511-openai-one-turn-v1",
+  "profile_id": "info511-nhanes-openai-one-turn-v1",
   "status": "requires_exact_review_and_root_grant",
-  "exercise_id": "info511-lab3-q4-synthetic",
-  "exercise_version": "info511-lab3-q4-synthetic-v1",
-  "teaching_policy_id": "info511-hints-v1",
+  "exercise_id": "info511-nhanes-wrangling",
+  "exercise_version": "info511-nhanes-wrangling-v1",
+  "teaching_policy_id": "info511-nhanes-hints-v1",
   "provider": "openai_compatible",
   "base_url": "https://api.openai.com/v1",
   "model": "gpt-6-luna",
@@ -56,7 +56,7 @@
     "tmpfs_bytes": 67108864,
     "stdio_bytes_each": 65536,
     "input_bytes": 262144,
-    "input_files": 5
+    "input_files": 6
   },
   "budget_note": "$0.35 provisional inference reservation within $20 total, retaining separate $0.01 smoke hold. Final P1 source/profile hash review and root grant remain pending. Prices are rounded-up reservation prices, not an invoice. Existing admitted CPU host only."
 }

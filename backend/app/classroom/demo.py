@@ -19,14 +19,18 @@ POLICY = "info511-hints-v1"
 LEARNERS = {"alice": ("synthetic-one", "edu:1"), "bob": ("synthetic-two", "edu:2")}
 
 
-def authorization():
-    assignments = {EXERCISE: VERSION}
+def authorization(exercise=EXERCISE, version=VERSION, policy_id=POLICY):
+    from .assignments import SUPPORTED
+
+    if (exercise, version, policy_id) not in SUPPORTED:
+        raise ValueError("unsupported classroom assignment")
+    assignments = {exercise: version}
     return {
         "exercise_versions": assignments,
         "teaching_policies": {
-            EXERCISE: {
-                "exercise_version": VERSION,
-                "policy_id": POLICY,
+            exercise: {
+                "exercise_version": version,
+                "policy_id": policy_id,
                 "mode": "hints_only",
                 "retention_seconds": 3600,
             }
@@ -149,20 +153,21 @@ def bind_learner(runtime, learner):
     runtime.runtime_host = factory
 
 
-def check_binding(directory):
+def check_binding(directory, exercise=EXERCISE, version=VERSION, policy_id=POLICY):
     from sqlalchemy import inspect
 
     from ..auth import _configuration
     from ..store.db import engine
 
     auth = json.loads((directory / "authorization.json").read_text())
+    expected_authorization = authorization(exercise, version, policy_id)
     if (
-        auth.get("exercise_versions") != {EXERCISE: VERSION}
-        or auth.get("teaching_policies") != authorization()["teaching_policies"]
+        auth.get("exercise_versions") != {exercise: version}
+        or auth.get("teaching_policies") != expected_authorization["teaching_policies"]
     ):
         raise ValueError("classroom binding differs")
     # Allow membership removal during the revocation demonstration, never additions.
-    expected = authorization()["subjects"]
+    expected = expected_authorization["subjects"]
     if set(auth.get("subjects", {})) - set(expected) or any(
         value not in ([], expected[name]) for name, value in auth.get("subjects", {}).items()
     ):

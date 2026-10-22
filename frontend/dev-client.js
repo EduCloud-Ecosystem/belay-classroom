@@ -11,12 +11,16 @@
   const assignedStance = new URL(window.location.href).searchParams.get("stance") || "peer";
   let stance = ["peer", "oracle", "control"].includes(assignedStance) ? assignedStance : "peer";
   const demoPresent = window.BELAY_CLASSROOM_DEMO !== undefined;
+  const classroomAssignments = [
+    ["info511-lab3-q4-synthetic", "info511-lab3-q4-synthetic-v1"],
+    ["info511-nhanes-wrangling", "info511-nhanes-wrangling-v1"]
+  ];
   function readDemo(value) {
     const fields = ["mode", "learner", "exercise_id", "exercise_version", "request_id", "expires_at", "message", "source"];
     if (!value || typeof value !== "object" || Array.isArray(value) ||
         Object.keys(value).length !== fields.length || !fields.every(key => Object.hasOwn(value, key)) ||
         value.mode !== "live" || value.learner !== "bob" ||
-        value.exercise_id !== "info511-lab3-q4-synthetic" || value.exercise_version !== "info511-lab3-q4-synthetic-v1" ||
+        !classroomAssignments.some(([id, version]) => value.exercise_id === id && value.exercise_version === version) ||
         typeof value.request_id !== "string" || !/^[A-Za-z0-9_-]{16,64}$/.test(value.request_id) ||
         typeof value.expires_at !== "number" || !Number.isFinite(value.expires_at) || value.expires_at <= 0 ||
         !Number.isFinite(new Date(value.expires_at * 1000).getTime()) ||
@@ -39,7 +43,7 @@
   let selectedReply = null;
   const classroom = window.BelayClassroom?.mount({
     container:$("classroom-guidance"), base,
-    onRetry:() => { if ($("exercise").value === "info511-lab3-q4-synthetic") { stance = "peer"; $("mode").value = "study"; updateDemo(); $("question").focus?.(); } },
+    onRetry:() => { if (classroomAssignments.some(([id]) => $("exercise").value === id)) { stance = "peer"; $("mode").value = "study"; updateDemo(); $("question").focus?.(); } },
     context:() => identity ? {...identity, exercise_id:$("exercise").value,
       exercise_version:exercises[$("exercise").value]?.exercise_version} : null
   });

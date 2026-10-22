@@ -167,5 +167,44 @@
       "determinism"
     ],
     "text": "A good unit test pins one behavior: given a specific input, the code produces a specific output, and the test fails loudly if that changes. Tests are most useful when they are deterministic and hermetic, depending on no network, clock, or hidden state, so a failure means the behavior changed and not that the environment did. Write the test you wish had caught the last bug."
+  },
+  {
+    "id": "nhanes-component-coverage",
+    "pack": "datascience",
+    "source": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/BPXO_L.htm",
+    "license": "CC-BY-4.0",
+    "attribution": "CDC/NCHS NHANES BPXO_L; EduCloud instructional adaptation",
+    "tags": [
+      "wrangling-eda",
+      "info511-nhanes-wrangling",
+      "NHANES BPXO missing readings and component coverage"
+    ],
+    "text": "NHANES BPXO can contain a participant whose readings are missing. Other demographic participants have no BPXO record. A missing value alone cannot distinguish these cases; compare source SEQN coverage. Preserve missing measurements and do not infer why they are absent. These columns do not use refusal codes or zero for missingness."
+  },
+  {
+    "id": "nhanes-observational-unit",
+    "pack": "datascience",
+    "source": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/BPXO_L.htm",
+    "license": "CC-BY-4.0",
+    "attribution": "CDC/NCHS NHANES BPXO_L; EduCloud instructional adaptation",
+    "tags": [
+      "wrangling-eda",
+      "info511-nhanes-wrangling",
+      "NHANES SEQN and repeated reading observational units"
+    ],
+    "text": "SEQN identifies a participant. BPXOSY1/2/3 are repeated systolic readings in mm Hg, not people or years. A long-table row represents participant plus reading; the combined key is unique. Keep missing reading positions. Compare keyed values and missing masks against unchanged sources. Row order is not evidence of equivalence."
+  },
+  {
+    "id": "nhanes-survey-boundary",
+    "pack": "datascience",
+    "source": "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2021/DataFiles/DEMO_L.htm",
+    "license": "CC-BY-4.0",
+    "attribution": "CDC/NCHS NHANES DEMO_L; EduCloud instructional adaptation",
+    "tags": [
+      "wrangling-eda",
+      "info511-nhanes-wrangling",
+      "NHANES August 2021 to August 2023 public teaching subset"
+    ],
+    "text": "This NHANES August 2021–August 2023 fixture deliberately selects adults aged 18–79 and excludes age-80-plus records. Counts describe this teaching fixture only. It is not representative; repeated readings are not independent participants. National estimates require appropriate weights, design and CDC guidance. This task permits no clinical or causal conclusions."
   }
 ]

@@ -17,7 +17,8 @@ import time
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-from .demo import EXERCISE, VERSION, authorization, bind_learner, check_binding
+from .assignments import EXERCISE, POLICY, VERSION
+from .demo import authorization, bind_learner, check_binding
 
 PROFILE = Path(__file__).with_name("live-profile-v1.json")
 BACKEND = Path(__file__).parents[2]
@@ -60,7 +61,9 @@ def read_profile():
         "self_eval": {"http_attempts": 8, "output_tokens": 400},
     }
     if (
-        profile["max_messages_bytes"] != 16384
+        (profile["exercise_id"], profile["exercise_version"], profile["teaching_policy_id"])
+        != (EXERCISE, VERSION, POLICY)
+        or profile["max_messages_bytes"] != 16384
         or profile["max_attempts"] != 19
         or profile["runner_calls"] != 8
         or profile["total_microunits"] != 350000
@@ -211,7 +214,9 @@ def prepare(runtime, directory, profile, grant):
         policy = Path(temporary) / "policy.json"
         policy.write_text(json.dumps(budget(profile)))
         result = runtime.prepare(directory, policy, 8018, 5188)
-    (directory / "authorization.json").write_text(json.dumps(authorization(), indent=2))
+    (directory / "authorization.json").write_text(
+        json.dumps(authorization(EXERCISE, VERSION, POLICY), indent=2)
+    )
     runtime.private_write(directory / "live-grant.json", json.dumps(grant, sort_keys=True).encode())
     manifest = json.loads((directory / "runtime.json").read_text())
     manifest["inference_window"] = {
@@ -371,7 +376,7 @@ def run_turn(runtime, directory, profile, grant, grant_path, turn_path, response
         and response_output.resolve() != directory / "synthetic-released-result.json"
     ):
         raise ValueError("explicit private synthetic result artifact path required")
-    check_binding(directory)
+    check_binding(directory, EXERCISE, VERSION, POLICY)
     turn = read_turn(turn_path)
     store = execution_store()
     with store.ledger.transaction() as conn:
@@ -530,7 +535,7 @@ def main():
                     result = cleanup_private_installation(directory)
                     (directory / "synthetic-released-result.json").unlink(missing_ok=True)
                 elif args.action == "check":
-                    check_binding(directory)
+                    check_binding(directory, EXERCISE, VERSION, POLICY)
                     result = runtime.check(directory)
                 elif args.action == "browser":
                     from .browser_demo import start

@@ -59,9 +59,29 @@ def _cmp(value, op, threshold):
     raise ValueError(f"unknown op {op!r}")
 
 
-def _run_check(chk, ns, stdout_text, references=None, student_src="", tidy_checker=None):
+def _run_check(
+    chk, ns, stdout_text, references=None, student_src="", tidy_checker=None, nhanes_checker=None
+):
     """Return (ok: bool, primary_metric: float|None, detail: str)."""
     t = chk["type"]
+    if t == "nhanes_participant_readings":
+        ok, detail = nhanes_checker(
+            references[chk["demographics_file"]],
+            references[chk["bpxo_file"]],
+            ns.get(chk["demographics_var"]),
+            ns.get(chk["bpxo_var"]),
+            ns.get(chk["var"]),
+        )
+        if ok:
+            calls = [n for n in ast.walk(ast.parse(student_src)) if isinstance(n, ast.Call)]
+            methods = {n.func.attr for n in calls if isinstance(n.func, ast.Attribute)}
+            if not {"merge", "melt"}.issubset(methods):
+                return (
+                    False,
+                    None,
+                    "method: use the assignment's explicit merge() and melt() operations.",
+                )
+        return ok, None, detail
     if t == "tidy_source_cells":
         ok, detail = tidy_checker(
             references[chk["source_file"]], ns.get(chk["source_var"]), ns.get(chk["var"])
@@ -142,6 +162,7 @@ def main():
     # Snapshot source data before executing the learner's code.
     references = {}
     tidy_checker = None
+    nhanes_checker = None
     for chk in spec.get("checks", []):
         if chk["type"] == "tidy_source_cells":
             import pandas as pd
@@ -150,6 +171,12 @@ def main():
             # The inherited runner uses Python -I: staged files are not on
             # sys.path. Load the trusted helper before learner code executes.
             tidy_checker = runpy.run_path("tidy_check.py")["check_tidy"]
+        elif chk["type"] == "nhanes_participant_readings":
+            import pandas as pd
+
+            for field in ("demographics_file", "bpxo_file"):
+                references[chk[field]] = pd.read_csv(chk[field])
+            nhanes_checker = runpy.run_path("nhanes_check.py")["check_nhanes"]
     ns = {"__name__": "__student__"}
     buf = io.StringIO()
     err = None
@@ -172,7 +199,7 @@ def main():
         for chk in spec.get("checks", []):
             try:
                 ok, primary, detail = _run_check(
-                    chk, ns, stdout_text, references, student_src, tidy_checker
+                    chk, ns, stdout_text, references, student_src, tidy_checker, nhanes_checker
                 )
             except Exception as exc:  # noqa: BLE001
                 ok, primary, detail = False, None, f"{type(exc).__name__}: {exc}"
