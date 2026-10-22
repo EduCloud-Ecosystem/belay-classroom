@@ -4,8 +4,9 @@
 
 Canonical private repository: `EduCloud-Ecosystem/belay-classroom`, checkout
 `/Users/gregchism/dev/belay-classroom`, branch `codex/live-classroom-demonstration`.
-Base `0415bd902f66804514d26f773f42cc7cbd1906f0`; the live adapter source and this
-checkpoint are the next commit. Original Belay and the old B1 worktree are frozen.
+Verified backend revision `6c01829cc7c76924b61949f699454021f3bb441d`; the final
+display-branding and evidence checkpoint form the next commit. Original Belay
+and the old B1 worktree are frozen. Draft PR: `belay-classroom#1` (not merged).
 The initial fork import is `f53b8f19e0e445d9a0caedc734c048c383664134`, retaining
 upstream `92a1d3546798cf9e232a207fc0d7c42d4fb4ca6c` (open upstream PR14).
 
@@ -40,32 +41,48 @@ independent of monitoring consent.
 | Evidence | Result and bound |
 | --- | --- |
 | CSV checker | 10 initial controls passed. |
-| Private UI | Six fake-DOM lifecycle controls passed after the retained stale-response failure. Rendered interaction remains due. |
+| Private UI | Rendered Bob acknowledgement, challenge, intended retry, separate prepared hint, pause and revoke passed. Pause added no optional event; revoke cleared alerts/events and preserved checkpoint/declaration. Alice reminder/checkpoint/no_ai/off observed with zero provider attempts. |
 | Classroom backend | Initial 46 passed/eight assertion failures retained; corrected eight assertions passed. |
 | Initial full CI | Failed mypy bytes typing and five obsolete catalog/route assertions per database backend. Repair commit `0415bd9` preserves exact inventories; three fake-SDK child cases subsequently passed. |
-| New live controls | Latest eight-module focused suite passed; exact count/raw output in coordinator `execution/verification/belay-live-offline-v3/result.json`. SDK and external execution are scripted. |
+| New live controls | Eight-module focused suite passed; final live-module offline v4 passed 94 controls, including the actual SDK/httpx2 bounded transport seam. Earlier failures remain retained. |
 | Actual-loop size | All 19 scripted stages measured with real queue/context/retrieval/governance. Largest 14,643 bytes. Original 6,144-byte contract failed and withheld dispatch; retained as evidence. Revised cap 16,384 preserves prompts. |
 | Review fixes | Checker exceptions now fail closed; result retrieval refreshes its credential; dedicated cleanup purges fresh private content and preserves accounting. Independent source review and focused controls passed. |
-| CW1 | 13 package controls, authored cell fault/repair execution, and four Linux CSV tests plus seven refusal subcases passed. Patched Cairn binary and matching web assets built. Connected flow remains pending. |
-| OpenAI | One direct HTTP200 smoke, 23 tokens, no retries; transport only. Integrated turn remains pending. |
+| Actual runner | Two confined container runs passed the incomplete/preserved-cell cases; ledger settled, containers removed. Original incorrectly named operator fixture failure retained. Not adversarial grading acceptance. |
+| CW1 | Connected v2 passed both learners' four-file preview/confirmation/committed receipt, CSV correctness, persisted scripted review and matching export. Review actor is an automated synthetic fixture; no human assessment-quality claim. Receipt and preview layouts inspected. |
+| OpenAI | Integrated one-job live turn passed: four requests, 7,742 reported tokens, no retries/unknowns; released response inspected as hints only. This turn needed no container call. Earlier direct 23-token smoke remains separate. |
+| Private teardown | Live authorization revoked; private/encrypted rows and operator response removed; temporary remote provider file removed; accounting retained. Ordinary deletion, not secure erasure. |
+| Recovery and phone | Saved reply survived reload and was deleted. An actual accepted HTTP202 response was deliberately lost; unsaved recovery after reload reused its original job. Three completed prepared-lane jobs, 15 settled attempts, zero unknowns. A 390px rendered layout had no horizontal overflow; full accessibility remains unqualified. |
+| Required CI | All quality, SQLite and Postgres gates passed at `6c01829`, run `39692080492`. Final branding commit requires its own CI result. |
 
-Lint/format passed for the earlier CI repair. Its type check was incomplete at a
-768 MiB bound; the container was stopped and removed, failure retained. Required
-full quality and SQLite/Postgres matrix gates remain pending on the new source.
-No full-platform, human-review, Jupyter-kernel or student-readiness claim.
+Rendered v1 retained a Bob restart failure after Alice's confirmed host exit;
+cause unconfirmed (same-port socket reuse is a source-based candidate). V2 retained
+a configuration transport failure before work. V3 used a fresh origin; in-app
+browser aborts remain visible, while the qualified Chromium harness completed
+the remediation journey directly beside the service in 7.53 seconds. No source
+workaround weakened authority or cleared a pending browser request. No full-platform,
+human-review, Jupyter-kernel or student-readiness claim.
 
 ## Budget and next outcome
 
-Greg authorized $20 total demonstration testing. Keep the separate $0.01 direct
-smoke hold until billing reconciliation. The revised one-turn profile proposes
-$0.35, with 19 attempts (1/2/8/8), 341,252 conservative token units, existing
-15-second request/900-second job deadlines and eight isolated verifier calls.
-This proposal is not a reservation or final P1/root grant.
+Greg authorized $20 total demonstration testing. Current holds total $5.46:
+$0.01 direct smoke, $0.10 Exa lookup, $0.35 completed live turn and $5 operational
+contingency; $14.54 remains unallocated. Invoices are unreconciled. The live
+ledger's $0.007742 rounded estimate is not the provider invoice; retain its full
+hold. P1 approved the exact source/profile before root's one-shot grant. The
+profile admitted 19 attempts (1/2/8/8) and 341,252 conservative token units;
+actual usage was lower. No new VM or Modal resource was provisioned.
 
-Next: required CI gates and final exact source/profile review; qualify actual
-container confinement/teardown; execute one bounded governed live hint; run the
-connected synthetic submission/review/export and inspect rendered interfaces.
-Keep all failures, skipped checks, unknown liabilities and cleanup evidence.
+Rendered v3 teardown passed: listeners/owned containers stopped, subjects revoked,
+private/encrypted/dialogue message/turn rows zero, deletion fences and accounting
+retained. Existing Cairn/Postgres services remained healthy. The additional
+operator authority probes had incorrect response-key/status assertions and are
+not counted as passes; existing required CI authorization controls remain the
+acceptance evidence. No grant was restored to repeat a probe.
+
+Next: record final branding CI and hand off the [synthetic MVP](classroom-mvp-handoff.md).
+Full EduCloud acceptance is separate. Keep all failures, skipped checks, unknown
+liabilities and cleanup evidence. Backend source/profile hashes remain unchanged
+by the display-only branding correction.
 
 Read affected source/callers/tests and this record first. Reuse component maps,
 short handoffs and deterministic checks. Do not repeat successful unchanged
@@ -87,3 +104,28 @@ public query data only. This establishes connector connectivity, not integration
 into Belay's governed execution. No MESA resource, collection, OAuth entitlement
 or institutional deployment was exercised. Keep MESA acceptance separate from
 the current noninstitutional synthetic demonstration.
+
+## Classroom interface branding (21 October)
+
+Greg confirmed the tutor remains Belay. The active development client, reference
+widget, embed Ask control and shared status/recovery copy now display Belay.
+Existing API routes, storage keys, message roles and technical identifiers retain
+their contracts; historical provenance and earlier failed evidence are unchanged.
+This is a display-copy correction, with no backend or governance changes.
+
+MCP remains proposed: deterministic internal checks use direct calls; expose only
+task-selected external tools. Start MESA with bounded, allowlisted course-material
+list/read/search, without automatically granting its broad read/write catalog;
+Exa supplies public search. Enforce server OAuth scopes and EduCloud course
+membership on every call, and treat tool output as untrusted. This design is not
+implemented and does not qualify MESA authorization.
+
+Branding checks: 75 shared/frontend lifecycle controls and 38 dependency-free
+development-client controls passed; touched JS and inline-script syntax and
+`git diff --check` passed. The initial development-client selection also invoked
+unavailable DOM/asset checks (missing local jsdom and pinned npm packages); the
+focused rerun explicitly excluded those 15 dependency-backed cases. No packages
+were installed. Rendered desktop, remediation, recovery and phone QA passed;
+the final commit's required CI remains coordinator-owned. Source
+checkpoint: parent `6c01829cc7c76924b61949f699454021f3bb441d`, uncommitted branding
+diff across eight frontend/test files and this record; no backend edits.

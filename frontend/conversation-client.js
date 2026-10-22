@@ -180,7 +180,7 @@
     jobsPrefix() { return this.prefix + "/conversations/" + encodeURIComponent(this.cid) + "/jobs"; }
     jobNote(state) {
       if (this.quietProgress && ["preparing", "queued", "running"].includes(state)) return "";
-      return {preparing:"Checking request status…", queued:"Waiting for a worker…", running:"Sol is working…",
+      return {preparing:"Checking request status…", queued:"Waiting for a worker…", running:"Belay is working…",
         unknown:"The request outcome is unknown. Checking it will not submit again.", completed:"Reply completed."}[state] || "Checking request status…";
     }
     async controlledSend(input) {

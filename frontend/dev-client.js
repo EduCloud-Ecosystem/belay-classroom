@@ -21,7 +21,7 @@
     context:() => identity ? {...identity, exercise_id:$("exercise").value,
       exercise_version:exercises[$("exercise").value]?.exercise_version} : null
   });
-  const defaultQuestionPlaceholder = $("question").getAttribute("placeholder") || "Ask Sol something specific (optional)…";
+  const defaultQuestionPlaceholder = $("question").getAttribute("placeholder") || "Ask Belay something specific (optional)…";
   function renderQuote(target, source) {
     const text = String(source || "");
     // Quote preview is formatting only: no links, images, attributes or active HTML.
@@ -49,9 +49,9 @@
   }
   function quoteBlock(excerpt) {
     const quote = document.createElement("blockquote"); quote.className = "reply-reference";
-    quote.setAttribute("aria-label", "In reply to Sol");
+    quote.setAttribute("aria-label", "In reply to Belay");
     const label = document.createElement("span"); label.className = "quote-label";
-    label.textContent = "In reply to Sol"; quote.appendChild(label);
+    label.textContent = "In reply to Belay"; quote.appendChild(label);
     const content = document.createElement("div"); renderQuote(content, excerpt);
     quote.appendChild(content); return quote;
   }
@@ -130,7 +130,7 @@
     }
     if (error.code === "request_not_admitted" && fallback && fallback !== record) {
       fallback.feedback = "not_submitted";
-      fallback.note = "No tutor feedback was submitted for this run. The previous request is now closed. Choose Ask Sol to discuss this run.";
+      fallback.note = "No tutor feedback was submitted for this run. The previous request is now closed. Choose Ask Belay to discuss this run.";
     }
     renderFeed(feedMessages);
   }
@@ -215,7 +215,7 @@
         bubble(m, group);
         if (m.role === "assistant" && (!m.status || m.status === "completed") && record !== glassOwner) {
           const follow = document.createElement("button"); follow.type = "button";
-          follow.className = "reply-followup"; follow.textContent = "Ask Sol about this reply";
+          follow.className = "reply-followup"; follow.textContent = "Ask Belay about this reply";
           follow.addEventListener("click", () => selectReply(record)); group.appendChild(follow);
         }
       });
@@ -224,7 +224,7 @@
       status.setAttribute("aria-label", "System notice");
       const hasAnswer = record.messages.some(m => m.role === "assistant" && (!m.status || m.status === "completed"));
       status.textContent = record.code === "result_expired"
-        ? "This response can no longer be restored. For a new response, enter a question and choose Ask Sol."
+        ? "This response can no longer be restored. For a new response, enter a question and choose Ask Belay."
         : record.note ? "Tutor feedback: " + record.note :
         !hasAnswer && record.feedback === "not_submitted" && record.execution !== "running" && !(record === activeRecord && busy)
           ? "No tutor feedback submitted for this operation." : "";
@@ -488,7 +488,7 @@
       if (out.recovered_request) clearTelemetry("An earlier request was recovered. No new tutor reply was generated.");
       else telemetry(out);
       if (!out.recovered_request) {$("question").value = ""; removeReply();}
-      $("ask").textContent = "Ask Sol";
+      $("ask").textContent = "Ask Belay";
       $("status").textContent = out.recovered_request
         ? (event === "run" ? "Code ran. Recovered the previous tutor reply; no feedback for this run was submitted."
           : "Recovered the original request. Your current input was not submitted.") : "";
@@ -503,7 +503,7 @@
           message = (lastResult?.ok ? "Code ran. " : "Your code raised an error. ") + context + message;
         }
         $("status").textContent = message;
-        $("ask").textContent = error.uncertain && !error.continuationAllowed ? "Check request status" : "Ask Sol";
+        $("ask").textContent = error.uncertain && !error.continuationAllowed ? "Check request status" : "Ask Belay";
       }
     }
     finally { setBusy(false); }
@@ -537,7 +537,7 @@
       }
     } catch (error) { if (current === generation) {
       recordFailure(error, null); $("status").textContent = error.message;
-      $("ask").textContent = error.uncertain && !error.continuationAllowed ? "Check request status" : "Ask Sol";
+      $("ask").textContent = error.uncertain && !error.continuationAllowed ? "Check request status" : "Ask Belay";
     } }
     finally { setBusy(false); }
   }

@@ -54,7 +54,7 @@ async function setup(state={}) {
     if(dom) nodes[id].listeners={};
   }
   nodes.backend.value='https://belay.invalid'; nodes.mode.value='study';
-  nodes.ask.textContent='Ask Sol'; nodes.run.textContent='Run code';
+  nodes.ask.textContent='Ask Belay'; nodes.run.textContent='Run code';
   const window={location:{href:'https://host.invalid'+(state.search||'')},BELAY_AUTH_ORIGIN:'https://belay.invalid',
     BELAY_GET_ACCESS_TOKEN:async()=>'short-lived-token',BELAY_LEARNER_ID:'gh:1',
     BELAY_INSTITUTION_ID:'inst-a',BELAY_CLASS_ID:'class-a',crypto:{randomUUID:()=>`request-${++state.serial}`},
@@ -233,7 +233,7 @@ test('lost saved reply retry reuses request ID and appends one exchange',async()
   assert.equal(bubbles(env).length,2);
 });
 
-test('a history network failure after completion keeps the successful live Sol reply visible',async()=>{
+test('a history network failure after completion keeps the successful live Belay reply visible',async()=>{
   const env=await setup(),check=env.controls().check;check.checked=true;await check.fire('change');
   env.state.failHistory=true;env.nodes.question.value='A completed question';await env.nodes.ask.fire('click');
   assert.equal(bubbles(env).length,2);
@@ -305,7 +305,7 @@ test('run results show printed values and check feedback without exposing the AP
   assert.match(env.nodes.result.textContent,/Check details · 0\/1 passed/);
   assert.doesNotMatch(env.nodes.result.textContent,/"pack"|"goalMet"|"metric"/);
   const turn=env.calls.find(c=>c.url.endsWith('/api/sol/jobs'));
-  assert.deepEqual(JSON.parse(turn.options.body).result,env.state.runResult); // Full context still goes to Sol.
+  assert.deepEqual(JSON.parse(turn.options.body).result,env.state.runResult); // Full context still goes to Belay.
   assert.equal(JSON.parse(turn.options.body).event,'run');
   assert.equal(env.calls.filter(c=>c.url.endsWith('/api/run')).length,1);
   assert.equal(env.calls.filter(c=>c.url.endsWith('/api/sol/jobs')).length,1);
@@ -318,7 +318,7 @@ test('Run succeeds but disabled feedback is a confirmed non-submission, with no 
  await env.nodes.run.fire('click');
  assert.match(env.nodes.result.textContent,/Code ran successfully/);
  assert.match(env.nodes.status.textContent,/Code ran.*No new tutor feedback was submitted.*not enabled/);
- assert.equal(env.nodes.ask.textContent,'Ask Sol');
+ assert.equal(env.nodes.ask.textContent,'Ask Belay');
  assert.equal(env.calls.filter(c=>c.url.endsWith('/api/sol/jobs')).length,0);
  assert.equal([...env.state.entries.keys()].some(k=>k.startsWith('belay.ask.')),false);
 });
@@ -389,7 +389,7 @@ function assertWaiting(env,label) {
   assert.equal(env.nodes.ask.textContent,label);
   assert.equal(env.nodes.status.textContent,'');
   assert.match(env.nodes['feedback-announcement'].textContent,/Preparing tutor feedback/);
-  assert.doesNotMatch(env.nodes['conversation-controls'].textContent,/Checking request status|Waiting for a worker|Sol is working/);
+  assert.doesNotMatch(env.nodes['conversation-controls'].textContent,/Checking request status|Waiting for a worker|Belay is working/);
 }
 
 for(const saved of [false,true]) for(const terminal of ['completed','failed','unknown']) {
@@ -398,10 +398,10 @@ for(const saved of [false,true]) for(const terminal of ['completed','failed','un
       pollTerminal:terminal==='completed'?null:terminal});
     if(saved) {const check=env.controls().check;check.checked=true;await check.fire('change');}
     const pending=env.nodes.ask.fire('click');
-    await pollPaused(env);assertWaiting(env,'Ask Sol');
+    await pollPaused(env);assertWaiting(env,'Ask Belay');
     const announcement=env.nodes['feedback-announcement'].textContent;
     await env.nodes.run.fire('click'); // blocked; not a second execution
-    releasePoll(env);await pollPaused(env);assertWaiting(env,'Ask Sol');
+    releasePoll(env);await pollPaused(env);assertWaiting(env,'Ask Belay');
     assert.equal(env.nodes['feedback-announcement'].textContent,announcement);
     releasePoll(env);await pending;
     assert.equal(env.nodes['feedback-loading'].hidden,true);
@@ -421,7 +421,7 @@ for(const saved of [false,true]) for(const terminal of ['completed','failed','un
       assert.equal(env.calls.filter(c=>c.options.method==='POST'&&c.url.endsWith('/jobs')).length,1);
     } else {
       assert.ok(env.nodes.status.textContent.length>0);
-      assert.equal(env.nodes.ask.textContent,'Ask Sol');
+      assert.equal(env.nodes.ask.textContent,'Ask Belay');
     }
   });
 }
@@ -429,7 +429,7 @@ for(const saved of [false,true]) for(const terminal of ['completed','failed','un
 test('long polling timeout ends animation with a query-only recovery entry and stable request ID',async()=>{
   const env=await setup({testPolling:true,timeoutMs:30,pollStates:['running']});
   const pending=env.nodes.ask.fire('click');await pollPaused(env);
-  const pointers=JSON.stringify([...env.state.entries]);assertWaiting(env,'Ask Sol');
+  const pointers=JSON.stringify([...env.state.entries]);assertWaiting(env,'Ask Belay');
   await new Promise(resolve=>setTimeout(resolve,40));releasePoll(env);await pending;
   assert.equal(env.nodes['feedback-loading'].hidden,true);
   assert.equal(env.nodes.ask.disabled,false);
@@ -445,8 +445,8 @@ test('saved and unsaved refresh recovery show the same silent busy state without
     if(saved) {const check=first.controls().check;check.checked=true;await check.fire('change');}
     await first.nodes.ask.fire('click');
     first.state.unknown=false;first.state.testPolling=true;first.state.pollStates=['queued','running'];
-    const restored=await setup(first.state);await pollPaused(restored);assertWaiting(restored,'Ask Sol');
-    releasePoll(restored);await pollPaused(restored);assertWaiting(restored,'Ask Sol');
+    const restored=await setup(first.state);await pollPaused(restored);assertWaiting(restored,'Ask Belay');
+    releasePoll(restored);await pollPaused(restored);assertWaiting(restored,'Ask Belay');
     releasePoll(restored);for(let i=0;i<20;i++) await tick();
     assert.equal(restored.nodes['feedback-loading'].hidden,true);
     assert.equal(restored.nodes.ask.disabled,false);
@@ -617,7 +617,7 @@ test('expired temporary result is an operation notice, not an assistant reply',a
  env.nodes.question.value='Test expiry';await env.nodes.ask.fire('click');
  assert.equal(bubbles(env).filter(b=>b.className.includes('bubble-tutor')).length,0);
  assert.match(groupText(groups(env)[0]),/This response can no longer be restored/);
- assert.match(groupText(groups(env)[0]),/enter a question and choose Ask Sol/);
+ assert.match(groupText(groups(env)[0]),/enter a question and choose Ask Belay/);
  assert.doesNotMatch(groupText(groups(env)[0]),/Tutor feedback:/);
  assert.equal(groups(env)[0]['data-feedback-state'],'result_expired');
 });
@@ -639,7 +639,7 @@ test('expiry notice needs a confirmed result lookup and recovery never submits a
  assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
  assert.equal(restored.calls.filter(c=>c.url.includes('/by-request/')).length,1);
  assert.equal(restored.nodes.ask.disabled,false);
- // A replacement is created only after the learner chooses Ask Sol.
+ // A replacement is created only after the learner chooses Ask Belay.
  restored.state.pollTerminal=null;restored.nodes.question.value='New question';
  await restored.nodes.ask.fire('click');
  assert.equal(restored.calls.filter(c=>c.options.method==='POST'&&c.url.endsWith('/jobs')).length,1);
@@ -693,7 +693,7 @@ test('Glass Box prepares an explicit quoted follow-up without overwriting or sen
  const calls=env.calls.filter(c=>c.url.endsWith('/api/sol/jobs'));
  assert.match(JSON.parse(calls.at(-1).options.body).recent.at(-1).text,/category mean/);
  assert.equal(JSON.parse(calls.at(-1).options.body).reply_to.request_id,JSON.parse(calls[0].options.body).request_id);
- assert.match(env.nodes['chat-feed'].textContent,/In reply to Sol/);
+ assert.match(env.nodes['chat-feed'].textContent,/In reply to Belay/);
 });
 
 
@@ -742,7 +742,7 @@ test('saved restored reply can be referenced and its quote stays in restored his
  const body=JSON.parse(post.options.body);
  assert.ok(body.reply_to.conversation_id);
  const again=await setup(restored.state);
- assert.match(again.nodes['chat-feed'].textContent,/In reply to Sol/);
+ assert.match(again.nodes['chat-feed'].textContent,/In reply to Belay/);
  assert.equal(again.calls.some(c=>c.options.method==='POST'),false);
 });
 
@@ -766,7 +766,7 @@ test('422 then remove reference preserves draft and permits exactly one delibera
  await env.nodes['glass-correct'].fire('click');
  env.nodes.question.value='Explain this answer';env.state.rejectQuote=true;
  await env.nodes.ask.fire('click');
- assert.equal(env.nodes.ask.textContent,'Ask Sol');
+ assert.equal(env.nodes.ask.textContent,'Ask Belay');
  assert.equal(env.nodes.question.value,'Explain this answer');
  const denied=JSON.parse(env.calls.filter(c=>c.url.endsWith('/api/sol/jobs')).at(-1).options.body).request_id;
  assert.equal(env.calls.some(c=>c.url.endsWith('/by-request/'+denied)),false);
@@ -787,7 +787,7 @@ test('legacy server cannot receive an incompatible quoted POST',async()=>{
  assert.equal(env.calls.filter(c=>c.url.endsWith('/api/sol/jobs')).length,1);
  assert.equal(env.nodes.question.value,'Follow up');
  assert.match(env.nodes['chat-feed'].textContent,/server needs an update/);
- assert.equal(env.nodes.ask.textContent,'Ask Sol');
+ assert.equal(env.nodes.ask.textContent,'Ask Belay');
 });
 
 test('Run after a missing legacy request preserves output and offers an explicit fresh Ask',async()=>{
@@ -798,7 +798,7 @@ test('Run after a missing legacy request preserves output and offers an explicit
  await env.nodes.run.fire('click');
  assert.equal(env.calls.filter(c=>c.url.endsWith('/api/sol/jobs')).length,1);
  assert.match(env.nodes.result.textContent,/Code ran/);
- assert.equal(env.nodes.ask.textContent,'Ask Sol');
+ assert.equal(env.nodes.ask.textContent,'Ask Belay');
  assert.equal(env.nodes.question.value,'Explain my new run');
  assert.doesNotMatch(env.nodes['chat-feed'].textContent,/is being recovered/);
  assert.match(env.nodes['chat-feed'].textContent,/previous request was not accepted/);
@@ -808,11 +808,11 @@ test('Run after a missing legacy request preserves output and offers an explicit
  assert.match(env.nodes['chat-feed'].textContent,/Live answer/);
 });
 
-test('confirmed authentication failure restores Ask Sol and preserves draft',async()=>{
+test('confirmed authentication failure restores Ask Belay and preserves draft',async()=>{
  const env=await setup({pollTerminal:'failed',pollReason:'provider_auth_failed'});
  env.nodes.question.value='Please explain my result';
  await env.nodes.ask.fire('click');
- assert.equal(env.nodes.ask.textContent,'Ask Sol');
+ assert.equal(env.nodes.ask.textContent,'Ask Belay');
  assert.equal(env.nodes.question.value,'Please explain my result');
  assert.match(env.nodes.status.textContent,/rejected its credentials/);
  assert.equal(env.calls.filter(c=>c.url.endsWith('/api/sol/jobs')).length,1);
@@ -827,12 +827,12 @@ test('refresh of unresolved feedback labels the action as status checking',async
 });
 
 
-test('approved earlier unknown restores Ask Sol and preserves the old record when a new question succeeds',async()=>{
+test('approved earlier unknown restores Ask Belay and preserves the old record when a new question succeeds',async()=>{
  const first=await setup({unknown:true});await first.nodes.ask.fire('click');
  const pointer=JSON.parse([...first.state.entries.values()].find(v=>v.includes('pending')));
  first.state.operatorContinuations=[pointer.request_id];
  const restored=await setup(first.state);
- assert.equal(restored.nodes.ask.textContent,'Ask Sol');
+ assert.equal(restored.nodes.ask.textContent,'Ask Belay');
  assert.equal(restored.calls.filter(c=>c.options.method==='POST').length,0);
  restored.nodes.question.value='A separate new question';
  // Recheck old unknown, then the newly submitted request completes.

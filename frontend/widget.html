@@ -56,7 +56,7 @@
     .chat-pane { display:flex; flex-direction:column; gap:10px; border-top:3px solid var(--accent); }
     .pane-heading { padding-bottom:10px; border-bottom:1px solid var(--border); }
     .msgs { display:flex; flex-direction:column; gap:10px; height:clamp(180px,35vh,440px); overflow:auto; overscroll-behavior:contain; border:1px solid var(--border); border-radius:8px; padding:10px; }
-    .msgs:empty::before { content:"Ask Sol a question to get started."; color:var(--muted); text-align:center; margin:auto; }
+    .msgs:empty::before { content:"Ask Belay a question to get started."; color:var(--muted); text-align:center; margin:auto; }
     .msg { padding:10px 12px; border:1px solid var(--border); border-radius:8px; max-width:90%; overflow-wrap:anywhere; }
     .msg.student { align-self:flex-end; background:var(--surface-2); }
     .msg.tutor { align-self:flex-start; max-width:100%; background:var(--code-bg); }
@@ -81,11 +81,11 @@
 </head>
 <body>
 <header class="site-header">
-  <div class="brand-group"><img src="AI-Powered-Spark.svg" alt="" width="28" height="28"/><h1>Sol</h1><span class="header-description">Peer tutor · Reference widget</span></div>
+  <div class="brand-group"><img src="AI-Powered-Spark.svg" alt="" width="28" height="28"/><h1>Belay</h1><span class="header-description">Peer tutor · Reference widget</span></div>
   <div class="controls-group"><label class="theme-picker"><span>Theme</span><select data-theme-picker aria-label="Color theme"><option value="auto">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></div>
 </header>
 <div class="wrap">
-  <p class="note intro">Think it through with Sol. Signals describe the tutor’s help, never grades or rankings.</p>
+  <p class="note intro">Think it through with Belay. Signals describe the tutor’s help, never grades or rankings.</p>
   <details class="settings"><summary>Session settings</summary>
   <div class="bar">
     <div><label for="base">Backend URL</label><input id="base" value="http://localhost:8000" /></div>
@@ -120,7 +120,7 @@
         <h2 class="pane-heading">Conversation</h2>
         <div id="conversation-controls"></div>
         <div class="msgs" id="msgs"></div>
-        <div class="composer"><textarea aria-label="Message to Sol" id="say" rows="2" placeholder="Ask the tutor, or paste what you tried..."></textarea>
+        <div class="composer"><textarea aria-label="Message to Belay" id="say" rows="2" placeholder="Ask the tutor, or paste what you tried..."></textarea>
         <button id="send">Send</button></div>
       </div>
       <details class="pane goals">
@@ -136,7 +136,7 @@
     </div>
 
     <div class="pane signals-pane">
-      <h2 class="pane-heading">How Sol is helping</h2>
+      <h2 class="pane-heading">How Belay is helping</h2>
       <div id="signals"><p class="note">An explanation from the latest reply will appear here.</p></div>
     </div>
   </div>

@@ -1,10 +1,19 @@
-# One-turn live profile v1 — source ready, runtime acceptance pending
+# One-turn live profile v1 — bounded synthetic execution verified
 
 Checkout `/Users/gregchism/dev/belay-classroom`, branch
-`codex/live-classroom-demonstration`, base
-`0415bd902f66804514d26f773f42cc7cbd1906f0`. This source is uncommitted. Upstream
-Belay, the old B1 worktree, Portage, Cairn and Waypoint are unchanged. Root is the
+`codex/live-classroom-demonstration`, verified backend revision
+`6c01829cc7c76924b61949f699454021f3bb441d`. Upstream
+Belay, the old B1 worktree and Portage are unchanged by this adapter. Root is the
 sole runtime/remote operator. This document grants no spend or infrastructure.
+
+On 21 October, exact P1 review, full quality/SQLite/Postgres CI and actual runner
+qualification passed before a single integrated synthetic turn. Four provider
+requests reported 7,742 tokens, with no retries or unknown accounting. The released
+response passed operator hints-only inspection; this response needed no runner
+call. Private content/response and the temporary remote key file were deleted,
+authorization revoked and accounting retained. The $0.35 hold remains pending
+invoice reconciliation. See [the current checkpoint](classroom-b1.md) for distinct
+browser and connected-workflow evidence. These results do not authorize replay.
 
 ## Reuse and observable outcome
 
@@ -196,7 +205,7 @@ existing dedicated cleanup tools against the installed directory; revocation is
 never reversed to regain inference. No long-lived backup of synthetic execution
 content is authorized. Root separately reconciles provider billing and all holds.
 
-## Verification and current checkpoint
+## Verification and historical source checkpoint
 
 Source-only work performed here: exact checkout inspection, underlying P1
 contract/source review, AST parsing, JSON parsing and whitespace inspection.
@@ -206,14 +215,14 @@ admitted to the source writer. The coordinator reported the prior offline run as
 retained measurement artifact is
 `execution/verification/belay-live-offline-v2/actual-loop-measurement-1.json`: 19
 frames (1/2/8/8), full retrieval/context/governance preserved, maximum 14643 message
-bytes. The original 6144-byte failure remains evidence. This unreleased v1 source
-now uses P1's provisional 16384-byte/19-attempt/$0.35 formula; final P1 hash review
-and root execution grant are still pending. The full-loop test retains exact role
+bytes. The original 6144-byte failure remains evidence. The final source
+uses the reviewed 16384-byte/19-attempt/$0.35 formula. Exact P1 hash review,
+root grant and execution subsequently passed as recorded above. The full-loop test retains exact role
 counts, measured 14643-byte maximum and 341252-unit reservation arithmetic; a
 separate deliberately 6144-byte test profile still proves fail-closed rejection.
-The newly changed source/tests have not been run. Root must format/review this
-diff, recompute source/profile hashes and rerun the affected checks without
-weakening gates.
+Root subsequently ran affected controls, full required CI, actual runner and
+the bounded live turn. Future backend/test/dependency changes require fresh
+hashes and affected verification; historical evidence does not admit a new run.
 
 Focused offline command from backend:
 
