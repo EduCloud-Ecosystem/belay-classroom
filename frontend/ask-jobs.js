@@ -176,7 +176,10 @@ globalThis.belayAskJobs = function ({ storage,
         }
         if (!e.uncertain && (e.status === 422 || ["rate_limited", "queue_full", "payload_too_large", "content_not_storable", "invalid_execution_data", "conversation_conflict",
           "jobs_disabled", "jobs_not_configured", "invalid_controls_mode", "controls_not_initialized", "verified_execution_required", "reply_unavailable", "request_invalid",
-          "budget_exhausted", "inference_window_expired", "concurrency_limited", "request_not_admitted"].includes(e.code))) {
+          "budget_exhausted", "inference_window_expired", "concurrency_limited", "request_not_admitted",
+          "hints_only", "prediction_required"].includes(e.code))) {
+          // Both classroom policy codes are returned before job admission on
+          // saved and unsaved routes; they must not tombstone a permitted retry.
           // Preserve the rejected request receipt. Only THIS newly generated ID
           // was definitely not admitted; an existing pending ID never enters here.
           write(context.key, {...pointer, pending:false, not_submitted:true, reason:e.code});

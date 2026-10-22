@@ -618,6 +618,14 @@
     <section class="col-left">
         <div class="card stack">
             <div class="card-title">Session Controls</div>
+            <section id="presenter-demo" hidden aria-label="Live classroom demonstration">
+                <strong>Live AI · one synthetic turn</strong>
+                <p id="presenter-notice" role="status" aria-live="polite"></p>
+                <p>This live demo uses a fixed example question. Edit and run your work in the notebook.</p>
+                <p>Use your notebook and its checker separately. Run code is disabled here; this editor is not a saved notebook.</p>
+                <button id="presenter-policy" type="button">Use Oracle policy example</button>
+                <p id="presenter-policy-status" role="status" aria-live="polite"></p>
+            </section>
             <div class="row">
                 <label class="label" for="exercise">Exercise</label>
                 <select id="exercise" class="field"></select>
