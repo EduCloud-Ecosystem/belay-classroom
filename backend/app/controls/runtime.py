@@ -12,6 +12,8 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, TypeVar
 
+from sqlalchemy.engine import Connection
+
 from ..config import settings
 from .admission import Admission
 from .contracts import Amount, ControlError, Scope
@@ -51,6 +53,41 @@ def _check_attempt_guards() -> None:
 _execution: contextvars.ContextVar[Execution | None] = contextvars.ContextVar(
     "control_execution", default=None
 )
+
+# Optional narrow admission/correlation seam. The ordinary provider and runner
+# use the same ledger and settlement path with no extra policy by default.
+_reservation_guard: contextvars.ContextVar[Callable[[Connection, str], None] | None] = (
+    contextvars.ContextVar("reservation_guard", default=None)
+)
+_attempt_reference: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "attempt_reference", default=None
+)
+
+
+@contextmanager
+def reservation_guard(guard: Callable[[Connection, str], None]) -> Iterator[None]:
+    token = _reservation_guard.set(guard)
+    try:
+        yield
+    finally:
+        _reservation_guard.reset(token)
+
+
+def attempt_reference() -> str:
+    value = _attempt_reference.get()
+    if value is None:
+        raise ControlError("attempt_correlation_unavailable", 503)
+    return value
+
+
+def _reserve(context: Execution, attempt_id: str, amount: Amount, kind: str) -> dict:
+    with context.ledger.transaction() as conn:
+        guard = _reservation_guard.get()
+        if guard is not None:
+            guard(conn, kind)
+        return context.ledger.reserve_in(
+            conn, attempt_id, context.operation, context.scope, amount, kind
+        )
 
 
 @contextmanager
@@ -103,10 +140,9 @@ def model_call(
             raise ControlError("model_price_unavailable", 503)
         check_inference_deadline(context.ledger.now(conn))
     attempt_id = uuid.uuid4().hex
-    row = context.ledger.reserve(
+    row = _reserve(
+        context,
         attempt_id,
-        context.operation,
-        context.scope,
         Amount(
             tokens=input_bound + output_limit,
             microunits=input_bound * policy.input_price + output_limit * policy.output_price,
@@ -134,8 +170,12 @@ def model_call(
         context.ledger.settle(attempt_id, Amount())
         raise
     try:
-        result = call()
-        prompt, completion = usage(result)
+        token = _attempt_reference.set(attempt_id)
+        try:
+            result = call()
+            prompt, completion = usage(result)
+        finally:
+            _attempt_reference.reset(token)
     except BaseException as exc:
         # A lost response or interrupted thread is not proof of zero usage.
         context.ledger.settle(attempt_id, None)
@@ -195,10 +235,9 @@ def runner_call(call: Callable[[], T], wall_seconds: float) -> T:
     if not math.isfinite(wall_seconds) or wall_seconds <= 0:
         raise ControlError("invalid_runner_bound", 503)
     attempt_id = uuid.uuid4().hex
-    context.ledger.reserve(
+    _reserve(
+        context,
         attempt_id,
-        context.operation,
-        context.scope,
         # Include a small accounting allowance for timeout/kill overhead;
         # actual excess is still recorded and stops further spending.
         Amount(runs=1, wall_ms=math.ceil(wall_seconds * 1000) + 1000),
@@ -219,7 +258,11 @@ def runner_call(call: Callable[[], T], wall_seconds: float) -> T:
         context.ledger.settle(attempt_id, Amount())
         raise
     try:
-        result = call()
+        token = _attempt_reference.set(attempt_id)
+        try:
+            result = call()
+        finally:
+            _attempt_reference.reset(token)
     except BaseException:
         context.ledger.settle(attempt_id, None)
         admission.release_slot(slot, stopped=False)

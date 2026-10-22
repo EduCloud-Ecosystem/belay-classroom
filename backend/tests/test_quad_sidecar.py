@@ -173,7 +173,7 @@ def test_gradingspec_result_is_read_only_context():
 
 def test_no_grade_write_route_exists():
     """The sidecar exposes exactly health/capabilities/turn/goals/reflection/overlay/
-    events and scoped dialogue — none of which write a grade (the tutor never writes grades)."""
+    events, scoped dialogue and private classroom guidance — none write a grade."""
     api = build_router(ConsentRouter(InMemoryStore()), get_active_pack(), lambda: None)
     app = FastAPI()
     app.include_router(api)
@@ -189,6 +189,7 @@ def test_no_grade_write_route_exists():
         ("/quad/v1/reflection", ("POST",)),
         ("/quad/v1/overlay", ("POST",)),
         ("/quad/v1/events", ("POST",)),
+        ("/quad/v1/classroom/{exercise_id}/{exercise_version}", ("GET", "POST")),
         ("/quad/v1/conversations/config", ("GET",)),
         ("/quad/v1/conversations", ("GET", "POST")),
         ("/quad/v1/conversations/{cid}", ("DELETE", "GET")),

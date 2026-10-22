@@ -63,7 +63,7 @@ def submitted_csv(repository: Path, revision: str, path: str) -> bytes:
     if relative.is_absolute() or ".." in relative.parts or relative.name != "tidy-inflation.csv":
         raise ValueError("explicit relative tidy-inflation.csv path required")
 
-    def git(*args):
+    def git(*args: str) -> bytes:
         return subprocess.run(
             ["git", "-C", str(repository), *args], capture_output=True, check=True, timeout=10
         ).stdout

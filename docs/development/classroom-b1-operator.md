@@ -1,11 +1,19 @@
-# B1 synthetic classroom component walkthrough — prepared, not accepted
+# B1 synthetic classroom component walkthrough
 
-Checkout `/Users/gregchism/.codex/worktrees/belay-classroom-b1/belay`, branch
-`codex/belay-classroom-b1`, base `92a1d3546798cf9e232a207fc0d7c42d4fb4ca6c` plus
-uncommitted files inventoried/hashes in the private `belay-handoff.txt`.
+Current checkout `/Users/gregchism/dev/belay-classroom`, branch
+`codex/live-classroom-demonstration`. The old B1 worktree and its source-only
+handoff are historical and frozen. See [current acceptance](classroom-b1.md)
+and the [MVP handoff](classroom-mvp-handoff.md) before using this recipe.
 
-This recipe is for a later, separately admitted runtime window. No command below
-has been run by B1. Do not start it during the current source-only window. No real
+On 21 October root completed the prepared-card browser remediation, saved and
+unsaved recovery, and phone-layout checks. The earlier source-only statements
+below retain preparation context; they are not the current execution ledger.
+Same-port learner restart failed once with an unclassified startup error; use a
+fresh explicitly admitted installation/origin for independent fixtures until
+that operator lifecycle has a focused fix. Do not clear unknown request state.
+The CLI check does not establish that its loopback ports are available.
+
+Every later execution needs a new root-admitted runtime window. No real
 student data, original course CSV, real provider keys, Docker, notebook execution,
 model download or model/API traffic is part of this lane. “Zero network” here
 means no external network/inference; a later browser walkthrough necessarily uses
@@ -92,7 +100,7 @@ missing/mismatched policy a 503 service error, forbidden mode a 403 private rule
 response. No new inference call classifies a learner. Existing distress routing,
 injection guard and governance remain in the flow.
 
-## Preparation and launch (NOT RUN; later admission required)
+## Preparation and launch (manual admission required)
 
 Use a prepared compatible Python environment with backend requirements,
 `python-dotenv` (existing launcher import), `httpx`/AnyIO (HTTP tests), pandas/numpy,
@@ -160,7 +168,8 @@ No reference solution or assessed narrative is included in the hint card.
 5. Repeat one ordinary Ask with optional saved conversation enabled; inspect
    actual job/result and saved restore/delete. Also check unsaved recovery by the
    same request ID. Do not invent a receipt or rerun an unknown provider request.
-   All these service interactions remain NOT RUN.
+   Saved restore/delete and actual accepted unsaved-request recovery after response
+   loss/reload passed in rendered v3; exact evidence is in the current checkpoint.
 6. Pause optional tracking and perform an allowed action: no new optional event.
    Revoke: alerts/events clear; checkpoint/declaration stay. The no-monitoring
    route still permits hints after the same required checkpoint. Set assistance
@@ -202,10 +211,14 @@ clears expired private bodies every 30 seconds; no scheduler is installed.
 Expiry denies reads immediately. Revision-only tombstones survive at most an
 additional 900 seconds, then cleanup removes them. If the process stops, no
 background cleanup runs: operator must run cleanup before re-admission and after
-expiry/retirement. Physical deletion and no-resurrection are still unverified.
+expiry/retirement. Dedicated v3 content deletion was verified; restore and
+no-resurrection acceptance across backups remains separate.
 No backups are permitted for this disposable rehearsal table. Copied databases,
 crash copies, filesystem snapshots and restored authority are outside acceptance;
-no real-course privacy claim follows from this preparation.
+no real-course privacy claim follows from this preparation. Root's dedicated
+v3 retirement explicitly revoked subjects and deleted fresh private, encrypted
+and dialogue content, retaining accounting/deletion fences. Backup/restore
+acceptance remains separate.
 
 ```sh
 python -B -m app.classroom.demo stop --data-dir /tmp/belay-info511-b1-rehearsal
@@ -297,10 +310,11 @@ usage remains held. The earlier pure-checker peak (69,976,064 bytes) excludes
 these web/DB imports; memory/time for this window are UNKNOWN, not pre-cleared.
 Use a fresh root-reviewed ceiling and retain any import/fixture failure.
 
-This window is not full Python 3.12/SQL/Postgres/repository acceptance. All broad
+This historical preparation window was not full Python 3.12/SQL/Postgres/repository acceptance. At that point, all broad
 required gates, actual server/worker, browser/accessibility, notebook execution,
 connected CW1 receipts/review/export, physical cleanup, restart/recovery and
-actual-model cases remain separate and NOT RUN.
+actual-model cases remained separate and NOT RUN. Later results supersede that
+status only within the bounds listed in the current change record.
 
 
 ### Python 3.12 off-host assertion correction (not rerun)

@@ -56,10 +56,10 @@ response = client.get('/api/curriculum',headers=headers)
 assert response.status_code == 200, response.text
 assert response.headers['access-control-allow-origin'] == host.origin
 ids = [e['id'] for m in response.json()['modules'] for e in m['exercises']]
-assert ids == ['ds-foundations','ds-regression','ds-mlp'], ids
+assert ids == ['ds-foundations','info511-lab3-q4-synthetic','ds-regression','ds-mlp'], ids
 assert client.get('/api/curriculum',headers={**headers,'X-Belay-Class':'ungranted'}).status_code == 404
 assert not (data / 'demo.sqlite3').exists()
-print('Exact-origin preflight, authenticated original three exercises, denial, no SQL: passed')
+print('Exact-origin preflight, authenticated four-exercise catalog, denial, no SQL: passed')
 """
     env = dict(os.environ)
     for name in tuple(env):

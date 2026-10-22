@@ -26,12 +26,15 @@ THREAT MODEL (stated honestly):
 
 from __future__ import annotations
 
+import contextvars
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 
 from ...controls.runtime import runner_call
@@ -56,6 +59,21 @@ class RunnerResult:
     wall_ms: float
     error: str | None  # runner-level error (timeout / spawn failure)
     artifacts: dict[str, str] = field(default_factory=dict)
+
+
+_execution_backend: contextvars.ContextVar[Callable[..., RunnerResult] | None] = (
+    contextvars.ContextVar("runner_execution_backend", default=None)
+)
+
+
+@contextmanager
+def execution_backend(backend: Callable[..., RunnerResult]) -> Iterator[None]:
+    """Explicit opt-in internal execution seam; outer runner accounting is unchanged."""
+    token = _execution_backend.set(backend)
+    try:
+        yield
+    finally:
+        _execution_backend.reset(token)
 
 
 def run_python(
@@ -95,6 +113,16 @@ def _run_python(
     (relative names; nested paths allowed). ``artifacts`` names files to read back
     out of the workdir after the run. All student code MUST come through here.
     """
+    backend = _execution_backend.get()
+    if backend is not None:
+        return backend(
+            program,
+            files=files,
+            artifacts=artifacts,
+            cpu_seconds=cpu_seconds,
+            memory_mb=memory_mb,
+            wall_seconds=wall_seconds,
+        )
     workdir = tempfile.mkdtemp(prefix="ptf_runner_")
     try:
         prog_path = os.path.join(workdir, "__program__.py")

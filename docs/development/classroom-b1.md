@@ -2,44 +2,130 @@
 
 ## Resume here
 
-- Repository: `EduCloud-Ecosystem/belay-classroom` (private), local `/Users/gregchism/dev/belay-classroom`. Upstream Belay and the original B1 worktree remain unchanged.
-- Baseline: Belay `92a1d3546798cf9e232a207fc0d7c42d4fb4ca6c`, the open PR14 candidate. Initial import retains its history and the exact B1 source snapshot. This is not upstream acceptance.
-- Coordinator: chat `01a16013-d58c-7932-8d1a-d2dd2977b458`. B1 owns tutor source here; CW1 owns Cairn/Waypoint integration; P1 owns bounded live provider qualification. One writer per checkout and one admitted verification workload at a time.
-- Goal: two synthetic learners complete INFO511 Lab3 Q4 through independent work or optional hints, deterministic feedback, four-file submission, explicit review and export. Keep optional monitoring private and remediation-focused.
-- Budget: Greg authorized **$20 total** for demonstration testing. First direct OpenAI request reserved $0.01; invoice cost remains unreconciled. No institutional resources or real student data.
+Canonical private repository: `EduCloud-Ecosystem/belay-classroom`, checkout
+`/Users/gregchism/dev/belay-classroom`, branch `codex/live-classroom-demonstration`.
+Verified backend revision `6c01829cc7c76924b61949f699454021f3bb441d`; the final
+display-branding and evidence checkpoint form the next commit. Original Belay
+and the old B1 worktree are frozen. Draft PR: `belay-classroom#1` (not merged).
+The initial fork import is `f53b8f19e0e445d9a0caedc734c048c383664134`, retaining
+upstream `92a1d3546798cf9e232a207fc0d7c42d4fb4ca6c` (open upstream PR14).
 
-## Current contract
+Coordinator chat `01a16013-d58c-7932-8d1a-d2dd2977b458` owns runtime admission and
+budget. CW1 owns Cairn/Waypoint integration; P1 reviews the provider contract.
+One writer per checkout, one supervised workload at a time on shared hosts.
 
-Pack `datascience`; exercise `info511-lab3-q4-synthetic`; version `info511-lab3-q4-synthetic-v1`; policy `info511-hints-v1`. Fixture: three fictional countries, three years, nine cells, three missing values. Do not redistribute the original course dataset.
+Goal: two synthetic learners complete INFO511 Lab3 Q4 through independent work
+or optional hints, deterministic feedback, four-file submission, explicit review
+and export. Pack `datascience`; exercise `info511-lab3-q4-synthetic`; version
+`info511-lab3-q4-synthetic-v1`; teaching policy `info511-hints-v1`. Use only the
+three-country, nine-cell synthetic fixture; original course-data rights remain
+unresolved. No real student data or institutional resource is admitted here.
 
-Reuse existing authorization, queued execution, provider accounting, deterministic governance and submission protocols. Only peer/study hints are allowed by trusted policy. A required prediction checkpoint and assistance declaration are independent of optional monitoring or research consent. Optional private guidance records trusted rule decisions, actual checker results and explicit remediation actions. No detector guesses, automatic penalties, grade effects or instructor/research feed.
+## Reuse and change
 
-The private API/table and exact operator recipe are documented in [classroom-b1-operator.md](classroom-b1-operator.md). That recipe's prepared hint-card adapter remains separate from any live-provider adapter. Preserve distress/injection/governance controls and recheck authority before every provider attempt.
+Reuse signed identity, authorization, encrypted queued execution, worker,
+provider accounting, existing safety/governance loop and formative checker.
+The separate [one-turn live profile](classroom-live-v1.md) adds cumulative
+attempt admission and a selected container runner. Defaults and the prepared
+hint-card lane remain unchanged. Cairn owns preview/confirm/receipt and review;
+saving work is not submission. The tutor writes no grades.
 
-Cairn owns immutable preview/confirm/receipt and instructor review. Waypoint owns saved work and the existing file-transfer bridge. Belay Classroom must not invent receipts, infer submission from saving, or turn formative feedback into grades.
+Private monitoring stays optional and off by default. Reuse trusted rule
+decisions, actual checker outcomes and explicit remediation actions; no extra
+model classifies learner behavior. No detector guesses, punishment or
+instructor/research feed. Prediction presence and assistance declaration are
+independent of monitoring consent.
 
-## Verified evidence and open gates
+## Verified evidence and limits
 
-| Evidence | Bound |
+| Evidence | Result and bound |
 | --- | --- |
-| Pure CSV checker | 10 controls passed on initial pinned checker; no notebook or sandbox claim. |
-| Private UI | Original stale-response failure retained; fixed source passed six fake-DOM controls. Rendered interaction remains due. |
-| Backend Python3.12 | 46 passed, eight test assertions failed because queue admission was counted as another model attempt. Test-only correction prepared; rerun due. Original failure retained. |
-| CW1 package v2 | 13 stdlib controls passed on isolated existing droplet. Initial copied-file permission failure retained. No connected receipt claim. |
-| OpenAI transport | One HTTP200 request, 23 reported tokens, no retries. Direct transport only; integrated tutoring/safety and invoice reconciliation are pending. |
-| Existing compute | Cairn testing droplet reachable, 4GB/2CPU; isolated tests leave existing Cairn/Postgres untouched. No new droplet. |
+| CSV checker | 10 initial controls passed. |
+| Private UI | Rendered Bob acknowledgement, challenge, intended retry, separate prepared hint, pause and revoke passed. Pause added no optional event; revoke cleared alerts/events and preserved checkpoint/declaration. Alice reminder/checkpoint/no_ai/off observed with zero provider attempts. |
+| Classroom backend | Initial 46 passed/eight assertion failures retained; corrected eight assertions passed. |
+| Initial full CI | Failed mypy bytes typing and five obsolete catalog/route assertions per database backend. Repair commit `0415bd9` preserves exact inventories; three fake-SDK child cases subsequently passed. |
+| New live controls | Eight-module focused suite passed; final live-module offline v4 passed 94 controls, including the actual SDK/httpx2 bounded transport seam. Earlier failures remain retained. |
+| Actual-loop size | All 19 scripted stages measured with real queue/context/retrieval/governance. Largest 14,643 bytes. Original 6,144-byte contract failed and withheld dispatch; retained as evidence. Revised cap 16,384 preserves prompts. |
+| Review fixes | Checker exceptions now fail closed; result retrieval refreshes its credential; dedicated cleanup purges fresh private content and preserves accounting. Independent source review and focused controls passed. |
+| Actual runner | Two confined container runs passed the incomplete/preserved-cell cases; ledger settled, containers removed. Original incorrectly named operator fixture failure retained. Not adversarial grading acceptance. |
+| CW1 | Connected v2 passed both learners' four-file preview/confirmation/committed receipt, CSV correctness, persisted scripted review and matching export. Review actor is an automated synthetic fixture; no human assessment-quality claim. Receipt and preview layouts inspected. |
+| OpenAI | Integrated one-job live turn passed: four requests, 7,742 reported tokens, no retries/unknowns; released response inspected as hints only. This turn needed no container call. Earlier direct 23-token smoke remains separate. |
+| Private teardown | Live authorization revoked; private/encrypted rows and operator response removed; temporary remote provider file removed; accounting retained. Ordinary deletion, not secure erasure. |
+| Recovery and phone | Saved reply survived reload and was deleted. An actual accepted HTTP202 response was deliberately lost; unsaved recovery after reload reused its original job. Three completed prepared-lane jobs, 15 settled attempts, zero unknowns. A 390px rendered layout had no horizontal overflow; full accessibility remains unqualified. |
+| Required CI | All quality, SQLite and Postgres gates passed at `6c01829`, run `39692080492`. Final branding commit requires its own CI result. |
 
-Full lint/format/types, regression suites, Postgres matrix, real API/worker and rendered UI, notebook/kernel execution, actual submission/review/export, privacy lifecycle and qualified accumulated-output evaluation remain open. Initial import is not a release.
+Rendered v1 retained a Bob restart failure after Alice's confirmed host exit;
+cause unconfirmed (same-port socket reuse is a source-based candidate). V2 retained
+a configuration transport failure before work. V3 used a fresh origin; in-app
+browser aborts remain visible, while the qualified Chromium harness completed
+the remediation journey directly beside the service in 7.53 seconds. No source
+workaround weakened authority or cleared a pending browser request. No full-platform,
+human-review, Jupyter-kernel or student-readiness claim.
 
-## Next concrete outcome
+## Budget and next outcome
 
-1. Confirm the corrected eight accounting assertions against frozen new-repository source; retain earlier failures and the unchanged 46-control evidence.
-2. Execute trusted instructor examples, retain the six-row missingness failure and nine-row repair, then qualify actual notebook execution separately.
-3. Build a versioned live-provider adapter with finite input/output/attempt/currency bounds and trusted subject/request correlation. Never replace the prepared stub silently.
-4. Demonstrate the existing synthetic submission/review/export journey and inspect the learner interface. A scripted synthetic reviewer is labeled as such; it is not human acceptance.
+Greg authorized $20 total demonstration testing. Current holds total $5.46:
+$0.01 direct smoke, $0.10 Exa lookup, $0.35 completed live turn and $5 operational
+contingency; $14.54 remains unallocated. Invoices are unreconciled. The live
+ledger's $0.007742 rounded estimate is not the provider invoice; retain its full
+hold. P1 approved the exact source/profile before root's one-shot grant. The
+profile admitted 19 attempts (1/2/8/8) and 341,252 conservative token units;
+actual usage was lower. No new VM or Modal resource was provisioned.
 
-## Working efficiently
+Rendered v3 teardown passed: listeners/owned containers stopped, subjects revoked,
+private/encrypted/dialogue message/turn rows zero, deletion fences and accounting
+retained. Existing Cairn/Postgres services remained healthy. The additional
+operator authority probes had incorrect response-key/status assertions and are
+not counted as passes; existing required CI authorization controls remain the
+acceptance evidence. No grant was restored to repeat a probe.
 
-Read this record, affected source/callers/tests and the focused workflow. Reuse existing source maps and exact evidence rather than reconstructing old chats. Send each owner only its changed contract, dependencies and one next deliverable. Do not repeat successful unchanged checks or launch model explanations for deterministic questions. Preserve mandatory quality gates and keep failures visible.
+Next: record final branding CI and hand off the [synthetic MVP](classroom-mvp-handoff.md).
+Full EduCloud acceptance is separate. Keep all failures, skipped checks, unknown
+liabilities and cleanup evidence. Backend source/profile hashes remain unchanged
+by the display-only branding correction.
 
-Update this record after a meaningful change with checkout/revision, dirty paths, decision, verification and next action. Historical preparation is preserved in [the initial source record](history/classroom-b1-source-preparation-2026-10-21.md); read it only to resolve a specific uncertainty.
+Read affected source/callers/tests and this record first. Reuse component maps,
+short handoffs and deterministic checks. Do not repeat successful unchanged
+checks or reconstruct old chats without a specific unresolved question. The
+[historical preparation](history/classroom-b1-source-preparation-2026-10-21.md)
+and coordinator's private execution artifacts retain the detailed provenance.
+
+## MCP direction (21 October, proposed integration)
+
+EduCloud should own the learner/course tool allowlist, authorization, admission,
+budget and audit boundary. Exa supplies public-source discovery; existing MESA
+MCP services are optional data/metadata/research adapters. Begin with read-only
+capabilities and test denied/revoked access, bounded results, citations and tool
+outages. Keep device telemetry, private learner guidance and grade authority
+outside Exa/MESA tools. No broad tool catalog or automatic server installation.
+
+One connected Exa lookup returned two official MCP authorization pages using
+public query data only. This establishes connector connectivity, not integration
+into Belay's governed execution. No MESA resource, collection, OAuth entitlement
+or institutional deployment was exercised. Keep MESA acceptance separate from
+the current noninstitutional synthetic demonstration.
+
+## Classroom interface branding (21 October)
+
+Greg confirmed the tutor remains Belay. The active development client, reference
+widget, embed Ask control and shared status/recovery copy now display Belay.
+Existing API routes, storage keys, message roles and technical identifiers retain
+their contracts; historical provenance and earlier failed evidence are unchanged.
+This is a display-copy correction, with no backend or governance changes.
+
+MCP remains proposed: deterministic internal checks use direct calls; expose only
+task-selected external tools. Start MESA with bounded, allowlisted course-material
+list/read/search, without automatically granting its broad read/write catalog;
+Exa supplies public search. Enforce server OAuth scopes and EduCloud course
+membership on every call, and treat tool output as untrusted. This design is not
+implemented and does not qualify MESA authorization.
+
+Branding checks: 75 shared/frontend lifecycle controls and 38 dependency-free
+development-client controls passed; touched JS and inline-script syntax and
+`git diff --check` passed. The initial development-client selection also invoked
+unavailable DOM/asset checks (missing local jsdom and pinned npm packages); the
+focused rerun explicitly excluded those 15 dependency-backed cases. No packages
+were installed. Rendered desktop, remediation, recovery and phone QA passed;
+the final commit's required CI remains coordinator-owned. Source
+checkpoint: parent `6c01829cc7c76924b61949f699454021f3bb441d`, uncommitted branding
+diff across eight frontend/test files and this record; no backend edits.

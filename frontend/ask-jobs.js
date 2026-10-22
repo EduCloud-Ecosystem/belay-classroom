@@ -117,7 +117,7 @@ globalThis.belayAskJobs = function ({ storage,
           Array.isArray(context.config.operator_continuations) &&
           context.config.operator_continuations.includes(pointer.request_id);
         if (failure.continuationAllowed) failure.message =
-          "The earlier request remains unresolved. Support has enabled a separate new question. Choose Ask Sol to send your current question; the earlier request will not be resent.";
+          "The earlier request remains unresolved. Support has enabled a separate new question. Choose Ask Belay to send your current question; the earlier request will not be resent.";
         throw failure;
       }
       await wait(Math.min(Math.max(0, deadline - Date.now()), context.config.poll_seconds * 1000));
