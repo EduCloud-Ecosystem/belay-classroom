@@ -282,67 +282,16 @@ def cleanup_private_installation(directory):
     }
 
 
-def run_turn(runtime, directory, profile, grant, grant_path, turn_path, response_output=None):
-    from fastapi.testclient import TestClient
-    from sqlalchemy import select
-
+def live_adapter(run, store, runner):
+    """Shared guarded adapter; the explicit launchers execute it on their main thread."""
     from ..agent import get_llm
-    from ..classroom.policy import enforce
-    from ..controls.admission import jobs
-    from ..controls.contracts import ControlError, Policy
-    from ..controls.jobs_http import execution_store
+    from ..controls.contracts import ControlError
     from ..controls.jobs_worker import AskAdapter
     from ..controls.runtime import attempt_guard, reservation_guard
-    from ..controls.worker import run_one
     from ..core.registry import get_active_pack
     from ..core.runner import execution_backend
     from ..store import ConsentRouter, SqlStore
-    from .live_provider import LiveRun, install, wall_deadline, write_evidence
-    from .live_runner import ContainerRunner
-
-    run = LiveRun(profile, grant, directory, grant_path)
-    run.authority()
-    if (
-        response_output is not None
-        and response_output.resolve() != directory / "synthetic-released-result.json"
-    ):
-        raise ValueError("explicit private synthetic result artifact path required")
-    check_binding(directory)
-    if not turn_path or turn_path.stat().st_size > 8192:
-        raise ValueError("bounded synthetic turn file required")
-    turn = json.loads(turn_path.read_text())
-    if (
-        set(turn) != {"message", "source", "schema_present", "unit_present", "declaration"}
-        or type(turn["message"]) is not str
-        or type(turn["source"]) is not str
-        or not turn["message"].strip()
-        or turn["schema_present"] is not True
-        or turn["unit_present"] is not True
-        or turn["declaration"] != "ai_assisted"
-    ):
-        raise ValueError("explicit synthetic prediction and assistance declaration required")
-    store = execution_store()
-    with store.ledger.transaction() as conn:
-        if (
-            store.ledger.policy(conn) != Policy(**budget(profile))
-            or conn.execute(select(jobs.c.id)).first()
-        ):
-            raise ValueError("fresh exact-policy one-job installation required")
-    runner = ContainerRunner(run)
-    runner.preflight()  # Requires root's cached image; never pulls/builds or calls a model.
-    install(run)
-    bind_learner(runtime, "bob")
-    from ..main import app
-
-    host = runtime.runtime_host(directory, runtime.load(directory))
-    client = TestClient(
-        app,
-        headers={
-            "Authorization": "Bearer " + host.token(),
-            "X-Belay-Institution": "synthetic-inst",
-            "X-Belay-Class": "synthetic-class",
-        },
-    )
+    from .policy import enforce
 
     class LiveAdapter(AskAdapter):
         def check(self, job):
@@ -366,21 +315,90 @@ def run_turn(runtime, directory, profile, grant, grant_path, turn_path, response
             ):
                 return super().execute(job)
 
-    # Durable one-shot before the first state-changing HTTP request. A crash,
-    # rejection or unknown turn cannot be replayed by restarting this command.
+    return LiveAdapter(store, ConsentRouter(SqlStore()), get_active_pack(), get_llm)
+
+
+def read_turn(turn_path):
+    if not turn_path or turn_path.stat().st_size > 8192:
+        raise ValueError("bounded synthetic turn file required")
+    turn = json.loads(turn_path.read_text())
+    if (
+        set(turn) != {"message", "source", "schema_present", "unit_present", "declaration"}
+        or type(turn["message"]) is not str
+        or type(turn["source"]) is not str
+        or not turn["message"].strip()
+        or turn["schema_present"] is not True
+        or turn["unit_present"] is not True
+        or turn["declaration"] != "ai_assisted"
+    ):
+        raise ValueError("explicit synthetic prediction and assistance declaration required")
+    return turn
+
+
+def mark_started(run):
+    from .live_provider import write_evidence
+
     write_evidence(
-        directory / "run-started.json",
+        run.directory / "run-started.json",
         {
             "operation": run.operation,
-            "request_id": grant["request_id"],
-            "reservation_id": grant["reservation_id"],
-            "profile_sha256": grant["profile_sha256"],
-            "source_sha256": grant["source_sha256"],
+            "request_id": run.grant["request_id"],
+            "reservation_id": run.grant["reservation_id"],
+            "profile_sha256": run.grant["profile_sha256"],
+            "source_sha256": run.grant["source_sha256"],
             "started_at": time.time(),
-            "expires_at": grant["expires_at"],
+            "expires_at": run.grant["expires_at"],
         },
         new=True,
     )
+
+
+def run_turn(runtime, directory, profile, grant, grant_path, turn_path, response_output=None):
+    from fastapi.testclient import TestClient
+    from sqlalchemy import select
+
+    from ..controls.admission import jobs
+    from ..controls.contracts import ControlError, Policy
+    from ..controls.jobs_http import execution_store
+    from ..controls.worker import run_one
+    from .live_provider import LiveRun, install, wall_deadline, write_evidence
+    from .live_runner import ContainerRunner
+
+    run = LiveRun(profile, grant, directory, grant_path)
+    run.authority()
+    if (
+        response_output is not None
+        and response_output.resolve() != directory / "synthetic-released-result.json"
+    ):
+        raise ValueError("explicit private synthetic result artifact path required")
+    check_binding(directory)
+    turn = read_turn(turn_path)
+    store = execution_store()
+    with store.ledger.transaction() as conn:
+        if (
+            store.ledger.policy(conn) != Policy(**budget(profile))
+            or conn.execute(select(jobs.c.id)).first()
+        ):
+            raise ValueError("fresh exact-policy one-job installation required")
+    runner = ContainerRunner(run)
+    runner.preflight()  # Requires root's cached image; never pulls/builds or calls a model.
+    install(run)
+    bind_learner(runtime, "bob")
+    from ..main import app
+
+    host = runtime.runtime_host(directory, runtime.load(directory))
+    client = TestClient(
+        app,
+        headers={
+            "Authorization": "Bearer " + host.token(),
+            "X-Belay-Institution": "synthetic-inst",
+            "X-Belay-Class": "synthetic-class",
+        },
+    )
+
+    # Durable one-shot before the first state-changing HTTP request. A crash,
+    # rejection or unknown turn cannot be replayed by restarting this command.
+    mark_started(run)
     private_path = "/api/classroom/" + EXERCISE + "/" + VERSION
     state = client.get(private_path)
     if state.status_code != 200:
@@ -414,7 +432,7 @@ def run_turn(runtime, directory, profile, grant, grant_path, turn_path, response
     submitted = client.post("/api/sol/jobs", json=body)
     if submitted.status_code != 202 or submitted.json()["id"] != run.operation:
         raise ControlError("live_job_not_admitted", 503)
-    adapter = LiveAdapter(store, ConsentRouter(SqlStore()), get_active_pack(), get_llm)
+    adapter = live_adapter(run, store, runner)
     with wall_deadline(max(0.001, grant["expires_at"] - time.time())):
         run_one(store.admission, adapter)
     run.authority()
@@ -452,7 +470,9 @@ def run_turn(runtime, directory, profile, grant, grant_path, turn_path, response
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["validate", "prepare", "check", "run", "cleanup"])
+    parser.add_argument(
+        "action", choices=["validate", "prepare", "check", "run", "browser", "cleanup"]
+    )
     parser.add_argument("--data-dir", type=Path)
     parser.add_argument("--grant", type=Path)
     parser.add_argument(
@@ -467,6 +487,8 @@ def main():
     try:
         profile = read_profile()
         if args.action == "validate":
+            from .browser_demo import browser_source_manifest
+
             digest, files = source_manifest()
             result = {
                 "validated_source_only": True,
@@ -477,6 +499,7 @@ def main():
                 "installed_distributions": distribution_versions(),
                 "model_calls": 0,
                 "grant_checked": False,
+                "browser_source_sha256": browser_source_manifest()[0],
             }
             if args.grant:
                 read_inputs(args.grant)
@@ -509,6 +532,12 @@ def main():
                 elif args.action == "check":
                     check_binding(directory)
                     result = runtime.check(directory)
+                elif args.action == "browser":
+                    from .browser_demo import start
+
+                    result = start(
+                        runtime, directory, profile, grant, args.grant.resolve(), args.turn
+                    )
                 else:
                     result = run_turn(
                         runtime,

@@ -331,3 +331,41 @@ test("unapproved uncertainty and failed archive storage cannot send a new reques
     assert.deepEqual(JSON.parse(store.getItem(key)),old);
   }
 });
+
+for (const [code,status] of [['hints_only',403],['prediction_required',409]]) {
+  test(`${code} pre-admission denial preserves receipt and permits the same fixed ID without reconciliation`,async()=>{
+    const store=storage(), fixed='approved_live_request_0001';let denied=true;
+    const value=client(store,async(url,opts)=>{
+      if(opts.method==='POST') {
+        assert.ok(!url.endsWith('/reconcile'));assert.equal(JSON.parse(opts.body).request_id,fixed);
+        if(denied) return reply({detail:{code}},status);
+        return reply({id:completed.id,state:'queued'},202);
+      }
+      return reply(completed);
+    },{uuid:()=>fixed,config:{...config,missing_request_recovery:1}});
+    await assert.rejects(value.jobs.ask('https://test','/jobs',body),{code,uncertain:false,notSubmitted:true});
+    const preserved=JSON.parse([...store.values.values()][0]);
+    assert.deepEqual(preserved,{request_id:fixed,pending:false,not_submitted:true,reason:code});
+    assert.equal(await value.jobs.recover('https://test','/jobs','echo-1'),null);
+    denied=false;assert.equal((await value.jobs.ask('https://test','/jobs',body)).message,'useful answer');
+    assert.equal(value.calls.filter(c=>c.opts.method==='POST').length,2);
+    assert.equal(value.calls.some(c=>c.url.endsWith('/reconcile')),false);
+  });
+}
+
+test('fixed live ID transport uncertainty remains query-only even when the current question changes',async()=>{
+  const store=storage(),fixed='approved_live_request_0001';let posts=0;
+  const value=client(store,async(url,opts)=>{
+    if(opts.method==='POST') {posts++;throw new TypeError('lost acceptance response');}
+    return reply({...completed,state:'unknown',result:null});
+  },{uuid:()=>fixed});
+  await assert.rejects(value.jobs.ask('https://test','/jobs',body),{uncertain:true});
+  await assert.rejects(value.jobs.ask('https://test','/jobs',{...body,source:'changed current code'}),{uncertain:true});
+  assert.equal(posts,1);
+  assert.equal(JSON.parse([...store.values.values()][0]).pending,true);
+  const restored=client(store,async(url,opts)=>{
+    assert.notEqual(opts.method,'POST');assert.ok(url.endsWith(fixed));return reply(completed);
+  },{uuid:()=>fixed});
+  assert.equal((await restored.jobs.recover('https://test','/jobs','echo-1')).message,'useful answer');
+  assert.equal(restored.calls.some(c=>c.opts.method==='POST'),false);
+});

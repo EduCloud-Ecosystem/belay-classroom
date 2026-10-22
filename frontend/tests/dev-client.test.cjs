@@ -49,7 +49,8 @@ async function setup(state={}) {
   for(const id of ['backend','exercise','mode','source','question','status','result','prompt','chat-feed',
     'conversation-controls','ask','run','glass-evidence','glass-approach','glass-correct',
     'reply-reference','reply-excerpt','reply-remove',
-    'feedback-loading','feedback-announcement','glass-box','signals-storage']) {
+    'feedback-loading','feedback-announcement','glass-box','signals-storage',
+    'presenter-demo','presenter-notice','presenter-policy','presenter-policy-status']) {
     nodes[id]=dom ? dom.window.document.getElementById(id) : new Element(id==='exercise'?'select':'div');
     if(dom) nodes[id].listeners={};
   }
@@ -60,6 +61,12 @@ async function setup(state={}) {
     BELAY_INSTITUTION_ID:'inst-a',BELAY_CLASS_ID:'class-a',crypto:{randomUUID:()=>`request-${++state.serial}`},
     addEventListener:(event,handler)=>handlers[event]=handler,
     localStorage:{getItem:key=>state.entries.get(key)||null,setItem:(key,value)=>state.entries.set(key,value),removeItem:key=>state.entries.delete(key)}};
+  if (Object.hasOwn(state,'demoMetadata')) window.BELAY_CLASSROOM_DEMO=state.demoMetadata;
+  if(state.classroomHooks) window.BelayClassroom={mount:options=>{
+    state.classroomHooks.retry=options.onRetry;return {clear(){},refresh(){}};
+  }};
+  const exercise=state.demoExercise || {id:'echo-1',exercise_version:'v1',title:'Echo',prompt:'Learn loops',starter:'print(1)'};
+  const assignments={[exercise.id]:exercise.exercise_version};
   if(dom) Object.assign(window,{marked:dom.window.marked,DOMPurify:dom.window.DOMPurify,hljs:dom.window.hljs});
   const document=dom ? dom.window.document : {getElementById:id=>nodes[id],createElement:tag=>new Element(tag),
     createTextNode:text=>({textContent:text})};
@@ -72,11 +79,11 @@ async function setup(state={}) {
     if(state.unauthorized) return {ok:false,status:401,headers:new Headers(),json:async()=>({detail:'invalid credentials'})};
     const body=options.body?JSON.parse(options.body):{};
     let result={},status=200;
-    if(url.endsWith('/api/curriculum')) result={modules:[{exercises:[{id:'echo-1',title:'Echo',prompt:'Learn loops',starter:'print(1)'}]}]};
+    if(url.endsWith('/api/curriculum')) result={modules:[{exercises:[exercise]}]};
     else if(url.endsWith('/jobs/config')) {
       if(state.jobsConfigCode) {status=503;result={detail:{code:state.jobsConfigCode}};}
       else result={operator_continuations:state.operatorContinuations||[],...(state.missingRecovery ? {missing_request_recovery:1} : {}),...(state.legacyJobs ? {} : {reply_references:{version:1,passages:false}}),recovery_scope:'a'.repeat(64),learner_id:state.identity.learner_id,
-        assignments:{'echo-1':'v1'},poll_seconds:1,result_seconds:300,notice:'Temporary recovery'};
+        assignments,poll_seconds:1,result_seconds:300,notice:'Temporary recovery'};
     }
     else if(url.includes('/jobs/by-request/')) {
       if(url.endsWith('/reconcile') && state.missingRecovery) result={id:'b'.repeat(64),state:'failed',reason:'request_not_admitted',result:null};
@@ -87,11 +94,12 @@ async function setup(state={}) {
       else result={id:'b'.repeat(64),state:'completed',result:{message:state.reply||'Live answer',glass_box:{evidence:'I used the question you submitted about this exercise.',approach:'I asked a question so we can reason through the next step together.'}}};
     }
     else if(url.endsWith('/api/sol/jobs')) {
-      if(state.rejectQuote && body.reply_to) {status=422;result={detail:[{type:'extra_forbidden',loc:['body','reply_to'],msg:'Extra inputs not permitted'}]};}
+      if(state.demoDenials?.length) {status=403;result={detail:{code:state.demoDenials.shift()}};}
+      else if(state.rejectQuote && body.reply_to) {status=422;result={detail:[{type:'extra_forbidden',loc:['body','reply_to'],msg:'Extra inputs not permitted'}]};}
       else result={id:'b'.repeat(64),state:'queued'};
     }
-    else if(url.endsWith('/config')) result={controlled:!!state.controlled,recovery_scope:'a'.repeat(64),enabled:true,policy_id:'test-only',retention_seconds:300,
-      identity:state.identity,assignments:{'echo-1':'v1'}};
+    else if(url.endsWith('/config')) result={controlled:!!state.controlled,recovery_scope:'a'.repeat(64),enabled:state.savingEnabled!==false,policy_id:'test-only',retention_seconds:300,
+      identity:state.identity,assignments};
     else if(url.endsWith('/conversations')) {
       const cid=body.request_id;
       state.attempts.set(cid,{messages:[],revision:0,turns:new Map()});
@@ -128,7 +136,13 @@ async function setup(state={}) {
     else throw new Error('unexpected endpoint '+url);
     return {ok:status<400,status,headers:new Headers(),json:async()=>result};
   };
-  const context=vm.createContext({window,document,fetch,URL,localStorage:window.localStorage,crypto:require("node:crypto").webcrypto,setTimeout,clearTimeout,AbortController,Headers});
+  class Clock extends Date {static now(){return state.now ?? Date.now();}}
+  const schedule=(fn,ms)=>{
+    const timer=setTimeout(fn,ms);
+    if(Object.hasOwn(state,'demoMetadata') && ms>1000) {state.expire ||= fn;timer.unref();}
+    return timer;
+  };
+  const context=vm.createContext({window,document,fetch,URL,localStorage:window.localStorage,crypto:require("node:crypto").webcrypto,setTimeout:schedule,clearTimeout,AbortController,Headers,Date:Clock});
   for(const file of ['auth-client.js','control-messages.js','request-lifecycle.js','ask-jobs.js','conversation-client.js','dev-client.js']) {
     vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);
     if(file==='ask-jobs.js' && state.testPolling) {
@@ -859,4 +873,103 @@ test('quotation preview renders safe inline formatting and uses a compact remove
  assert.equal(env.nodes.question.value,'My draft');
  await env.nodes['reply-remove'].fire('click');
  assert.equal(env.nodes['reply-reference'].hidden,true);
+});
+
+function liveFixture(overrides={}) {
+  const demoMetadata={mode:'live',learner:'bob',exercise_id:'info511-lab3-q4-synthetic',
+    exercise_version:'info511-lab3-q4-synthetic-v1',request_id:'approved_live_request_0001',
+    expires_at:Math.floor(Date.now()/1000)+60,message:'Which columns identify one observation?',source:'print("synthetic")',...overrides};
+  return {demoMetadata,savingEnabled:false,identity:{institution_id:'synthetic-inst',class_id:'synthetic-class',learner_id:'edu:2'},
+    demoExercise:{id:'info511-lab3-q4-synthetic',exercise_version:'info511-lab3-q4-synthetic-v1',title:'Synthetic rehearsal',prompt:'Predict first',starter:'pass'}};
+}
+
+test('live presenter prefills once, locks execution and sends only the approved logical ID on explicit Ask',async()=>{
+  const env=await setup(liveFixture({expires_at:Date.now()/1000+60}));
+  assert.equal(env.calls.some(c=>c.options.method==='POST'),false);
+  assert.equal(env.nodes.question.value,env.state.demoMetadata.message);
+  assert.equal(env.nodes.source.value,env.state.demoMetadata.source);
+  assert.equal(env.nodes.exercise.value,env.state.demoMetadata.exercise_id);
+  assert.equal(env.nodes['presenter-demo'].hidden,false);
+  assert.match(env.nodes['presenter-notice'].textContent,/One approved request only/);
+  for(const id of ['run','exercise','backend']) assert.equal(env.nodes[id].disabled,true);
+  for(const id of ['source','question']) assert.equal(env.nodes[id].readOnly,true);
+  await env.nodes.run.fire('click');
+  assert.equal(env.calls.some(c=>c.url.endsWith('/api/run')||c.options.method==='POST'),false);
+  await env.nodes.ask.fire('click');
+  const posts=env.calls.filter(c=>c.url.endsWith('/api/sol/jobs'));
+  assert.equal(posts.length,1);
+  assert.equal(JSON.parse(posts[0].options.body).request_id,env.state.demoMetadata.request_id);
+  assert.equal(JSON.parse(posts[0].options.body).source,env.state.demoMetadata.source);
+  assert.match(env.nodes['chat-feed'].textContent,/Live AI/);
+  assert.equal(env.nodes.ask.disabled,true);assert.equal(env.nodes.run.disabled,true);
+  await env.nodes.ask.fire('click');
+  assert.equal(env.calls.filter(c=>c.options.method==='POST').length,1);
+});
+
+test('live presenter policy selection and intended retry never submit; denials preserve the approved ID for explicit hints',async()=>{
+  const state=liveFixture();state.demoDenials=['prediction_required','hints_only'];state.classroomHooks={};state.missingRecovery=true;
+  const env=await setup(state);
+  await env.nodes.ask.fire('click');assert.equal(env.nodes.ask.disabled,false);
+  await env.nodes['presenter-policy'].fire('click');
+  assert.match(env.nodes['presenter-policy-status'].textContent,/Oracle policy example selected/);
+  assert.equal(env.calls.filter(c=>c.options.method==='POST').length,1);
+  await env.nodes.ask.fire('click');
+  const before=env.calls.length;state.classroomHooks.retry();
+  assert.equal(env.calls.length,before);
+  assert.match(env.nodes['presenter-policy-status'].textContent,/Permitted hints selected/);
+  assert.equal(env.nodes.mode.value,'study');
+  await env.nodes.ask.fire('click');
+  const posts=env.calls.filter(c=>c.options.method==='POST');
+  assert.equal(posts.length,3);assert.ok(posts.every(c=>c.url.endsWith('/api/sol/jobs')));
+  assert.ok(posts.every(c=>JSON.parse(c.options.body).request_id===state.demoMetadata.request_id));
+  assert.deepEqual(posts.map(c=>JSON.parse(c.options.body).stance),['peer','oracle','peer']);
+  assert.equal(env.calls.some(c=>c.url.endsWith('/reconcile')),false);
+});
+
+test('invalid live metadata fails closed without reads, submissions or execution',async()=>{
+  const valid=liveFixture().demoMetadata;
+  for(const metadata of [null,[],{}, {...valid,mode:'prepared'}, {...valid,learner:'alice'},
+    {...valid,exercise_version:'wrong'}, {...valid,request_id:'bad'}, {...valid,message:''},
+    {...valid,expires_at:NaN}, {...valid,expires_at:Number.MAX_SAFE_INTEGER}, {...valid,extra:true}]) {
+    const env=await setup({demoMetadata:metadata});
+    assert.match(env.nodes['presenter-notice'].textContent,/Demo configuration unavailable/);
+    assert.equal(env.nodes.ask.disabled,true);assert.equal(env.nodes.run.disabled,true);
+    await env.nodes.ask.fire('click');await env.nodes.run.fire('click');assert.equal(env.calls.length,0);
+  }
+});
+
+test('live expiry disables explicit Ask and policy selection even after busy-state updates',async()=>{
+  const state=liveFixture();const env=await setup(state);assert.equal(env.nodes.ask.disabled,false);
+  state.now=(state.demoMetadata.expires_at+1)*1000;state.expire();
+  assert.match(env.nodes['presenter-notice'].textContent,/Live demo expired/);
+  for(const id of ['ask','run','presenter-policy']) assert.equal(env.nodes[id].disabled,true);
+  await env.nodes.ask.fire('click');await env.nodes.run.fire('click');
+  assert.equal(env.calls.some(c=>c.options.method==='POST'),false);
+  const expired=await setup(liveFixture({expires_at:Math.floor(Date.now()/1000)-1}));
+  assert.equal(expired.nodes.ask.disabled,true);assert.match(expired.nodes['presenter-notice'].textContent,/Live demo expired/);
+});
+
+test('live reload recovers the fixed unknown request without refilling after recovery or submitting again',async()=>{
+  const state=liveFixture();state.unknown=true;
+  const first=await setup(state);await first.nodes.ask.fire('click');
+  assert.equal(first.nodes.ask.textContent,'Check request status');state.unknown=false;
+  const restored=await setup(state);
+  assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
+  assert.ok(restored.calls.some(c=>c.url.endsWith('/by-request/'+state.demoMetadata.request_id)));
+  assert.equal(restored.nodes.ask.disabled,true);
+  assert.equal(restored.nodes.source.value,state.demoMetadata.source);
+  assert.equal(restored.nodes.question.value,state.demoMetadata.message);
+  assert.match(restored.nodes['presenter-notice'].textContent,/one synthetic turn is complete/);
+});
+
+test('live assignment or learner mismatch is unavailable while undefined metadata retains normal execution',async()=>{
+  const wrong=liveFixture();wrong.demoExercise.exercise_version='other';const mismatch=await setup(wrong);
+  assert.equal(mismatch.nodes.ask.disabled,true);assert.match(mismatch.nodes['presenter-notice'].textContent,/configuration unavailable/);
+  const wrongLearner=liveFixture();wrongLearner.identity.learner_id='edu:1';const learner=await setup(wrongLearner);
+  assert.equal(learner.nodes.ask.disabled,true);
+  const normal=await setup();assert.equal(normal.nodes.run.disabled,false);assert.equal(normal.nodes.backend.disabled,false);
+  for(const id of ['source','question']) assert.notEqual(normal.nodes[id].readOnly,true);
+  await normal.nodes.run.fire('click');
+  assert.equal(normal.calls.filter(c=>c.url.endsWith('/api/run')).length,1);
+  assert.equal(normal.calls.filter(c=>c.url.endsWith('/api/sol/jobs')).length,1);
 });

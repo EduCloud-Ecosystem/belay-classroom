@@ -7,8 +7,24 @@
   const glassBox = $("glass-box"), signalsStorage = $("signals-storage");
   const assignedStance = new URL(window.location.href).searchParams.get("stance") || "peer";
   let stance = ["peer", "oracle", "control"].includes(assignedStance) ? assignedStance : "peer";
+  const demoPresent = window.BELAY_CLASSROOM_DEMO !== undefined;
+  function readDemo(value) {
+    const fields = ["mode", "learner", "exercise_id", "exercise_version", "request_id", "expires_at", "message", "source"];
+    if (!value || typeof value !== "object" || Array.isArray(value) ||
+        Object.keys(value).length !== fields.length || !fields.every(key => Object.hasOwn(value, key)) ||
+        value.mode !== "live" || value.learner !== "bob" ||
+        value.exercise_id !== "info511-lab3-q4-synthetic" || value.exercise_version !== "info511-lab3-q4-synthetic-v1" ||
+        typeof value.request_id !== "string" || !/^[A-Za-z0-9_-]{16,64}$/.test(value.request_id) ||
+        typeof value.expires_at !== "number" || !Number.isFinite(value.expires_at) || value.expires_at <= 0 ||
+        !Number.isFinite(new Date(value.expires_at * 1000).getTime()) ||
+        typeof value.message !== "string" || !value.message.trim() || typeof value.source !== "string") return null;
+    return Object.freeze({...value});
+  }
+  const demo = demoPresent ? readDemo(window.BELAY_CLASSROOM_DEMO) : null;
+  if (demo) stance = "peer";
+  let demoReady = false, demoPrefilled = false, demoCompleted = false;
   let exercises = {}, dialogue, scope, identity, lastResult = null, busy = false, generation = 0;
-  const askJobs = globalThis.belayAskJobs();
+  const askJobs = globalThis.belayAskJobs(demo ? {uuid:() => demo.request_id} : undefined);
   let temporaryMessages = [], recent = [], savedView = false;
   let historyContext = null, liveContext = null;
   let localBusy = false, sessionBusy = false;
@@ -17,10 +33,26 @@
   let selectedReply = null;
   const classroom = window.BelayClassroom?.mount({
     container:$("classroom-guidance"), base,
-    onRetry:() => { if ($("exercise").value === "info511-lab3-q4-synthetic") { stance = "peer"; $("mode").value = "study"; $("question").focus?.(); } },
+    onRetry:() => { if ($("exercise").value === "info511-lab3-q4-synthetic") { stance = "peer"; $("mode").value = "study"; updateDemo(); $("question").focus?.(); } },
     context:() => identity ? {...identity, exercise_id:$("exercise").value,
       exercise_version:exercises[$("exercise").value]?.exercise_version} : null
   });
+  function demoBlocked() {
+    return demoPresent && (!demo || !demoReady || demoCompleted || Date.now() >= demo.expires_at * 1000);
+  }
+  function updateDemo() {
+    if (!demoPresent) return;
+    $("presenter-demo").hidden = false;
+    $("presenter-notice").textContent = !demo || !demoReady ? "Demo configuration unavailable. Ask and Run are disabled."
+      : Date.now() >= demo.expires_at * 1000 ? "Live demo expired. No new requests are permitted; earlier request recovery is unchanged."
+      : demoCompleted ? "The one synthetic turn is complete. No further question will be submitted."
+      : "Bob · expires " + new Date(demo.expires_at * 1000).toISOString() + ". One approved request only; nothing is submitted automatically.";
+    $("presenter-policy").textContent = stance === "oracle" ? "Use permitted hints" : "Use Oracle policy example";
+    $("presenter-policy").disabled = busy || demoBlocked();
+    $("presenter-policy-status").textContent = stance === "oracle"
+      ? "Oracle policy example selected. Choose Ask Belay explicitly to demonstrate the denial."
+      : "Permitted hints selected. Choose Ask Belay separately when ready.";
+  }
   const defaultQuestionPlaceholder = $("question").getAttribute("placeholder") || "Ask Belay something specific (optional)…";
   function renderQuote(target, source) {
     const text = String(source || "");
@@ -172,7 +204,13 @@
     element.className = "bubble " + (student ? "bubble-user" : "bubble-tutor markdown-body");
     if (!student && (!window.marked || !window.DOMPurify)) element.className += " markdown-plain";
     if (student) element.textContent = message.text;
-    else element.innerHTML = renderSafeMarkdown(message.text);
+    else {
+      element.innerHTML = renderSafeMarkdown(message.text);
+      if (demo) {
+        const label = document.createElement("p"); label.className = "note"; label.textContent = "Live AI";
+        element.appendChild(label);
+      }
+    }
     feed.appendChild(element);
     feed.scrollTop = feed.scrollHeight;
   }
@@ -330,6 +368,12 @@
     $("chat-feed").setAttribute("aria-busy", String(busy));
     $("feedback-loading").hidden = !busy;
     for (const id of ["ask", "run", "exercise", "backend", "mode"]) $(id).disabled = busy;
+    if (demoPresent) {
+      $("run").disabled = $("exercise").disabled = $("backend").disabled = true;
+      if (demo) $("source").readOnly = $("question").readOnly = true;
+      $("ask").disabled = busy || demoBlocked();
+      updateDemo();
+    }
   }
   function pick() {
     generation++;
@@ -349,6 +393,11 @@
         option.value = exercise.id; option.textContent = exercise.title;
         $("exercise").appendChild(option);
       }));
+      if (demo) {
+        demoReady = exercises[demo.exercise_id]?.exercise_version === demo.exercise_version;
+        if (!demoReady) throw new Error("Demo configuration unavailable.");
+        $("exercise").value = demo.exercise_id;
+      }
       pick();
       if (!dialogue && Object.keys(exercises).length) {
         dialogue = window.BelayConversations.mount({
@@ -359,14 +408,23 @@
         });
       }
       $("status").textContent = "";
+      if (demo && !demoPrefilled) {
+        const session = await dialogue.ready();
+        if (session.enabled || session.config.identity.learner_id !== "edu:2") throw new Error("Demo configuration unavailable.");
+        $("mode").value = "study";
+        $("question").value = demo.message; $("source").value = demo.source;
+        demoPrefilled = true;
+      }
       await recoverUnsaved();
     } catch (error) {
+      if (demo) demoReady = false;
       identity = null; clearTransient(); renderFeed([]);
       $("status").textContent = "Curriculum load failed: " + error.message;
     }
+    updateBusy();
   }
   async function run() {
-    if (busy) return false;
+    if (busy || demoPresent) return false;
     const record = startRecord("run");
     setBusy(true); $("status").textContent = "";
     lastResult = null; $("result").textContent = "Running your code…";
@@ -430,7 +488,7 @@
     }
   }
   async function ask(event = "chat") {
-    if (busy || !dialogue) return;
+    if (busy || !dialogue || demoBlocked()) { updateBusy(); return; }
     if (event === "chat" && selectedReply && !$("question").value.trim()) {
       $("question").focus();
       return;
@@ -445,6 +503,7 @@
       const input = {message, source: $("source").value, result: lastResult,
         mode: $("mode").value, stance};
       if (record.reply_to) input.reply_to = {request_id:record.reply_to.request_id, conversation_id:record.reply_to.conversation_id};
+      if (demo && (await dialogue.ready()).enabled) throw new Error("Demo configuration unavailable.");
       let out = await dialogue.send(input);
       if (originalScope && originalScope !== scope) throw new Error("Identity changed; enter a new question.");
       if (!out) {
@@ -488,6 +547,7 @@
       if (out.recovered_request) clearTelemetry("An earlier request was recovered. No new tutor reply was generated.");
       else telemetry(out);
       if (!out.recovered_request) {$("question").value = ""; removeReply();}
+      if (demo) demoCompleted = true;
       $("ask").textContent = "Ask Belay";
       $("status").textContent = out.recovered_request
         ? (event === "run" ? "Code ran. Recovered the previous tutor reply; no feedback for this run was submitted."
@@ -533,6 +593,7 @@
         renderFeed(temporaryMessages);
         clearTelemetry("An earlier request was recovered. No new tutor reply was generated.");
         askJobs.acknowledge(answer);
+        if (demo) demoCompleted = true;
         $("status").textContent = "Recovered the same request. No request was resubmitted.";
       }
     } catch (error) { if (current === generation) {
@@ -555,5 +616,20 @@
   window.addEventListener("belay-auth-changed", () => {
     generation++; identity = null; scope = null; clearTransient(); renderFeed([]);
   });
-  loadCurriculum();
+  $("presenter-policy")?.addEventListener("click", () => {
+    if (!demo || busy || demoBlocked()) return;
+    stance = stance === "oracle" ? "peer" : "oracle";
+    $("mode").value = "study";
+    updateDemo();
+  });
+  updateBusy();
+  if (demo) {
+    const expire = () => {
+      updateBusy();
+      const remaining = demo.expires_at * 1000 - Date.now();
+      if (remaining > 0) setTimeout(expire, Math.min(remaining, 2147483647));
+    };
+    expire();
+  }
+  if (!demoPresent || demo) loadCurriculum();
 })();
