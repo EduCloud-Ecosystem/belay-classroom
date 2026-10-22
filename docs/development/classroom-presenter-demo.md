@@ -130,3 +130,59 @@ must identify its synthetic inputs and whether its hint was live or prepared.
 Never copy service databases, provider credentials or raw authentication logs
 into the presentation package. Cairn's private synthetic submission/review
 evidence remains outside the viewer-facing package.
+
+## Notebook context extension — source preparation
+
+The next authorized milestone starts from clean checkout
+`/Users/gregchism/dev/belay-classroom`, branch `codex/notebook-classroom`, revision
+`780f9f171c848833bc4490259d245493b4c31aa4`. Reuse the existing queued Ask, exact
+synthetic turn/profile, policy panel and same-request recovery. The new frontend
+adapter captures selected notebook code; it does not execute, save, modify or
+submit a notebook. Cairn's exact saved-file submission remains separate.
+
+The authenticated per-user Jupyter host supplies `BELAY_SESSION_PROXY=true`,
+`BELAY_AUTH_ORIGIN` equal to its own origin, and `SOL_BACKEND_URL` equal to that
+origin plus `/belay/api`. The frontend sends native session cookies and the current
+`_xsrf` cookie as `X-XSRFToken` on every proxied API request. It does not request or
+receive a browser bearer token in this mode. Normal bearer hosts retain their
+existing behavior. The proxy strips `/belay/api`; for example,
+`/belay/api/api/sol/jobs` maps to the existing `/api/sol/jobs` route. These public
+bootstrap values do not grant server access: the host must authenticate the
+Jupyter user and enforce the matching synthetic identity and private routing.
+
+Only the trusted finite demonstration bootstrap may add
+`BELAY_NOTEBOOK_CONTEXT={version:1,origin:<exact notebook origin>}`. The notebook
+command explicitly opens `/belay/#belay-notebook=<64 lowercase hex nonce>` with an
+opener. The popup validates the exact configured/current origin and opener, then
+sends `{type:'belay-notebook-ready',version:1,nonce}` to that origin. It accepts
+only an exact-shape `{type:'belay-notebook-snapshot',version:1,nonce,source,dirty}`
+message from that opener/origin/nonce. Code is bounded to 8192 UTF-8 bytes and must
+equal the reviewed turn source. The popup computes SHA-256 with WebCrypto and
+previews the captured code/hash and the notebook's reported unsaved status.
+Missing, malformed, oversized or mismatched captures keep Ask disabled. Import
+never clicks Ask; in-flight/completed operations refuse replacement captures.
+No notebook metadata, outputs, Markdown, path, identity or assignment fields are
+accepted through this channel, and snapshot content is not persisted in browser
+storage. An existing request can still recover after reload without snapshot
+memory; recovery never submits a replacement.
+
+Frontend controls cover origin/opener/nonce and field validation, source/hash and
+unsaved previews, session/XSRF transport, explicit-only submission and reload
+recovery. Source-only tests do not establish authenticated Jupyter routing,
+kernel behavior, rendered interaction, phone accessibility, save/submission
+provenance or live inference. Root owns those runtime gates and the final source
+hash/grant binding. This subsection records frontend preparation only.
+
+Frontend checkpoint: shared dependency-free controls and the dependency-free
+development-client selection passed, as did touched JavaScript syntax and
+whitespace checks. An initial new recovery assertion inspected the fake DOM's
+text instead of its rendered bubble HTML; the corrected assertion passed.
+A broad test-name selection also selected fifteen existing dependency-backed
+cases, unavailable because local jsdom/pinned package installations are absent.
+Their failures remain visible; the explicit dependency-free selection passed.
+No packages were installed, no backend was edited, and no model, kernel, service,
+cloud workload or commit was started. Full dependency-backed frontend CI and
+rendered notebook/proxy acceptance remain root-owned gates. Changed frontend
+files are the auth, API, Ask, conversation and classroom-guidance clients,
+development HTML/JS, the new notebook-context adapter and their relevant tests.
+This record is the only documentation change.

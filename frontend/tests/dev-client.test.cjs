@@ -50,7 +50,8 @@ async function setup(state={}) {
     'conversation-controls','ask','run','glass-evidence','glass-approach','glass-correct',
     'reply-reference','reply-excerpt','reply-remove',
     'feedback-loading','feedback-announcement','glass-box','signals-storage',
-    'presenter-demo','presenter-notice','presenter-policy','presenter-policy-status']) {
+    'presenter-demo','presenter-notice','presenter-policy','presenter-policy-status',
+    'notebook-context','notebook-status','notebook-hash','notebook-source']) {
     nodes[id]=dom ? dom.window.document.getElementById(id) : new Element(id==='exercise'?'select':'div');
     if(dom) nodes[id].listeners={};
   }
@@ -62,6 +63,14 @@ async function setup(state={}) {
     addEventListener:(event,handler)=>handlers[event]=handler,
     localStorage:{getItem:key=>state.entries.get(key)||null,setItem:(key,value)=>state.entries.set(key,value),removeItem:key=>state.entries.delete(key)}};
   if (Object.hasOwn(state,'demoMetadata')) window.BELAY_CLASSROOM_DEMO=state.demoMetadata;
+  if(Object.hasOwn(state,'notebookContext')) {
+    window.BELAY_NOTEBOOK_CONTEXT=state.notebookContext;
+    window.location.href='https://host.invalid/belay/#belay-notebook='+'a'.repeat(64);
+    window.BELAY_SESSION_PROXY=true;window.BELAY_AUTH_ORIGIN='https://host.invalid';
+    window.SOL_BACKEND_URL='https://host.invalid/belay/api';
+    window.crypto.subtle=require('node:crypto').webcrypto.subtle;
+    window.opener=state.noOpener ? null : {postMessage:(value,target)=>{state.readyMessage={value,target};}};
+  }
   if(state.classroomHooks) window.BelayClassroom={mount:options=>{
     state.classroomHooks.retry=options.onRetry;return {clear(){},refresh(){}};
   }};
@@ -74,6 +83,7 @@ async function setup(state={}) {
     const create=document.createElement.bind(document);
     document.createElement=tag=>{const e=create(tag);e.listeners={};return e;};
   }
+  if(window.BELAY_SESSION_PROXY) document.cookie='_xsrf=synthetic-xsrf';
   const fetch=async(url,options)=>{
     calls.push({url,options});
     if(state.unauthorized) return {ok:false,status:401,headers:new Headers(),json:async()=>({detail:'invalid credentials'})};
@@ -142,8 +152,8 @@ async function setup(state={}) {
     if(Object.hasOwn(state,'demoMetadata') && ms>1000) {state.expire ||= fn;timer.unref();}
     return timer;
   };
-  const context=vm.createContext({window,document,fetch,URL,localStorage:window.localStorage,crypto:require("node:crypto").webcrypto,setTimeout:schedule,clearTimeout,AbortController,Headers,Date:Clock});
-  for(const file of ['auth-client.js','control-messages.js','request-lifecycle.js','ask-jobs.js','conversation-client.js','dev-client.js']) {
+  const context=vm.createContext({window,document,fetch,URL,TextEncoder,localStorage:window.localStorage,crypto:require("node:crypto").webcrypto,setTimeout:schedule,clearTimeout,AbortController,Headers,Date:Clock});
+  for(const file of ['auth-client.js','control-messages.js','request-lifecycle.js','ask-jobs.js','conversation-client.js','notebook-context.js','dev-client.js']) {
     vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);
     if(file==='ask-jobs.js' && state.testPolling) {
       const factory=context.belayAskJobs;
@@ -157,7 +167,7 @@ async function setup(state={}) {
     walk(nodes['conversation-controls']);
     return {check:all.find(e=>e.type==='checkbox'),button:text=>all.find(e=>e.tagName==='button'&&e.textContent===text)};
   };
-  return {state,nodes,calls,window,controls,context};
+  return {state,nodes,calls,window,controls,context,handlers};
 }
 
 test('unsaved current question reaches authenticated legacy edge and stays out of browser storage',async()=>{
@@ -972,4 +982,69 @@ test('live assignment or learner mismatch is unavailable while undefined metadat
   await normal.nodes.run.fire('click');
   assert.equal(normal.calls.filter(c=>c.url.endsWith('/api/run')).length,1);
   assert.equal(normal.calls.filter(c=>c.url.endsWith('/api/sol/jobs')).length,1);
+});
+
+function notebookFixture() {
+  return {...liveFixture(),notebookContext:{version:1,origin:'https://host.invalid'}};
+}
+async function importNotebook(env,changes={}) {
+  await env.handlers.message({origin:'https://host.invalid',source:env.window.opener,
+    data:{type:'belay-notebook-snapshot',version:1,nonce:'a'.repeat(64),
+      source:env.state.demoMetadata.source,dirty:true,...changes}});
+}
+test('notebook capture gates explicit Ask, previews actual unsaved code/hash and uses only the native session proxy',async()=>{
+  const env=await setup(notebookFixture());
+  assert.equal(env.nodes.ask.disabled,true);
+  assert.equal(env.nodes.backend.value,'https://host.invalid/belay/api');
+  assert.equal(env.state.readyMessage.value.type,'belay-notebook-ready');
+  await env.nodes.ask.fire('click');await env.nodes.run.fire('click');
+  assert.equal(env.calls.some(c=>c.options.method==='POST'),false);
+  await importNotebook(env);
+  assert.equal(env.nodes.ask.disabled,false);
+  assert.match(env.nodes['notebook-status'].textContent,/Unsaved.*does not save or submit/);
+  assert.equal(env.nodes['notebook-source'].textContent,env.state.demoMetadata.source);
+  assert.match(env.nodes['notebook-hash'].textContent,/^SHA-256: [a-f0-9]{64}$/);
+  assert.equal(env.calls.some(c=>c.options.method==='POST'),false);
+  await env.nodes.ask.fire('click');
+  assert.equal(env.calls.filter(c=>c.url.endsWith('/api/sol/jobs')).length,1);
+  for(const call of env.calls) {
+    assert.ok(call.url.startsWith('https://host.invalid/belay/api/'));
+    assert.equal(call.options.headers.Authorization,undefined);
+    assert.equal(call.options.headers['X-XSRFToken'],'synthetic-xsrf');
+    assert.equal(call.options.credentials,'same-origin');
+  }
+  const preview=env.nodes['notebook-source'].textContent;
+  await importNotebook(env,{source:'changed'});
+  assert.equal(env.nodes['notebook-source'].textContent,preview);
+  const persisted=JSON.stringify([...env.state.entries.values()]);
+  assert.ok(!persisted.includes(env.state.demoMetadata.source));
+  assert.ok(!persisted.includes(env.state.demoMetadata.message));
+  assert.ok(!persisted.includes('synthetic-xsrf'));
+});
+test('notebook mismatch clears the preview and requires a fresh valid capture, while bad opener prevents Ask',async()=>{
+  const env=await setup(notebookFixture());
+  await importNotebook(env);await importNotebook(env,{source:'unreviewed edit'});
+  assert.equal(env.nodes.ask.disabled,true);assert.equal(env.nodes['notebook-source'].textContent,'');
+  await importNotebook(env);assert.equal(env.nodes.ask.disabled,false);
+  const closed=await setup({...notebookFixture(),noOpener:true});
+  assert.equal(closed.nodes.ask.disabled,true);
+  assert.match(closed.nodes['notebook-status'].textContent,/Reopen Belay/);
+});
+test('notebook reload recovers an existing request without capture memory, replacement submission or source persistence',async()=>{
+  const state=notebookFixture();state.unknown=true;
+  const first=await setup(state);await importNotebook(first);await first.nodes.ask.fire('click');
+  state.unknown=false;
+  const restored=await setup({...state,noOpener:true});
+  assert.equal(restored.calls.some(c=>c.options.method==='POST'),false);
+  assert.ok(restored.calls.some(c=>c.url.endsWith('/by-request/'+state.demoMetadata.request_id)));
+  assert.ok(bubbles(restored).some(bubble => bubble.innerHTML.includes('Live answer')));
+  assert.equal(restored.nodes.ask.disabled,true);
+  assert.equal(restored.nodes['notebook-source'].textContent,'');
+});
+test('notebook bootstrap without a finite live demo disables actions and explains the missing configuration',async()=>{
+  const env=await setup({notebookContext:{version:1,origin:'https://host.invalid'}});
+  assert.equal(env.nodes.ask.disabled,true);assert.equal(env.nodes.run.disabled,true);
+  assert.equal(env.nodes['presenter-demo'].hidden,false);
+  assert.match(env.nodes['presenter-notice'].textContent,/configuration unavailable/);
+  assert.equal(env.calls.length,0);
 });

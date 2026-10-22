@@ -24,7 +24,8 @@
           const headers = await window.BelayAuth.headers(this.base);
           if (expired) throw globalThis.belayRequestError("request_timeout", true);
           return globalThis.belayRequestJSON(this.base + this.prefix + "/conversations" + path, {
-            method, headers, ...(body === undefined ? {} : {body:JSON.stringify(body)})
+            method, headers, credentials:window.BelayAuth.credentials?.(this.base),
+            ...(body === undefined ? {} : {body:JSON.stringify(body)})
           });
         })()]);
       } catch (error) {

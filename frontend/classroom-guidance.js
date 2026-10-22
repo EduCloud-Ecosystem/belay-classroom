@@ -31,7 +31,7 @@
         if (stale()) return;
         const path = "/api/classroom/" + encodeURIComponent(value.exercise_id) + "/" + encodeURIComponent(value.exercise_version);
         const response = await fetch(base() + path, {
-          method:body ? "POST" : "GET", headers, credentials:"omit", cache:"no-store",
+          method:body ? "POST" : "GET", headers, credentials:window.BelayAuth.credentials?.(base()) || "omit", cache:"no-store",
           redirect:"error", body:body ? JSON.stringify(body) : undefined
         });
         const result = await response.json();

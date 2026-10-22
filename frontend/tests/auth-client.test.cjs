@@ -15,7 +15,8 @@ function setup(origin = 'https://belay.example.invalid') {
     BELAY_INSTITUTION_ID: 'inst-a', BELAY_CLASS_ID: 'class-a',
   };
   const values=new Map();
-  const ctx = vm.createContext({ window, URL,Headers,AbortController,setTimeout,clearTimeout,crypto:require("node:crypto").webcrypto,localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)}, fetch: async (url, options) => {
+  const document={cookie:'_xsrf=2%7Csynthetic-xsrf'};
+  const ctx = vm.createContext({ window, document, URL,Headers,AbortController,setTimeout,clearTimeout,crypto:require("node:crypto").webcrypto,localStorage:{getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)}, fetch: async (url, options) => {
     calls.push({ url, options });
     const data=url.endsWith('/jobs/config') ? {recovery_scope:'a'.repeat(64),learner_id:'gh:1',assignments:{'echo-1':'v1'},poll_seconds:1,result_seconds:300,notice:'Temporary recovery'}
       : url.includes('/jobs/by-request/') ? {id:'b'.repeat(64),state:'completed',result:{message:'Answer'}}
@@ -31,8 +32,32 @@ function setup(origin = 'https://belay.example.invalid') {
     .replace(/^import .*;$/gm, '')
     .replace(/export /g, '');
   vm.runInContext(api, ctx);
-  return { window, ctx, calls };
+  return { window, document, ctx, calls };
 }
+
+test('same-origin notebook proxy uses refreshed native XSRF and session cookies without requesting a bearer', async () => {
+  const {window,document,ctx,calls}=setup('https://host.example.invalid');
+  window.BELAY_SESSION_PROXY=true;
+  window.SOL_BACKEND_URL='https://host.example.invalid/belay/api';
+  window.BELAY_GET_ACCESS_TOKEN=async()=>{throw Error('must never request browser bearer');};
+  const headers=await window.BelayAuth.headers(window.SOL_BACKEND_URL);
+  assert.deepEqual(JSON.parse(JSON.stringify(headers)),{'Content-Type':'application/json','X-XSRFToken':'2|synthetic-xsrf'});
+  assert.equal(window.BelayAuth.credentials(window.SOL_BACKEND_URL),'same-origin');
+  document.cookie='_xsrf=fresh-xsrf';
+  await vm.runInContext(`belayAskJobs().ask('https://host.example.invalid/belay/api','/api/sol/jobs',{exercise_id:'echo-1'})`,ctx);
+  assert.equal(calls.length,3);
+  for(const call of calls) {
+    assert.equal(call.options.headers['X-XSRFToken'],'fresh-xsrf');
+    assert.equal(call.options.headers.Authorization,undefined);
+    assert.equal(call.options.credentials,'same-origin');
+  }
+  for(const invalid of ['https://attacker.invalid/belay/api','https://host.example.invalid/other','https://host.example.invalid/belay/api?x=1'])
+    await assert.rejects(window.BelayAuth.headers(invalid),/not configured/);
+  for(const cookie of ['', '_xsrf=%0Aunsafe', '_xsrf=%ZZ', '_xsrf=one; _xsrf=two']) {
+    document.cookie=cookie;
+    await assert.rejects(window.BelayAuth.headers(window.SOL_BACKEND_URL),/verification/);
+  }
+});
 
 test('all API calls, including export, carry bearer and scope headers', async () => {
   const { window, ctx, calls } = setup('http://localhost:8000');

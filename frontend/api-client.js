@@ -22,6 +22,7 @@ async function _json(path, opts, validate) {
   return globalThis.belayRequestJSON(BASE_URL + path, {
     ...opts,
     headers: await window.BelayAuth.headers(BASE_URL),
+    credentials: window.BelayAuth.credentials?.(BASE_URL),
   }, { validate });
 }
 
@@ -66,7 +67,8 @@ export function createParticipant(anonCode, consent) {
 }
 
 export async function exportEvents(participantId) {
-  const res = await fetch(`${BASE_URL}/api/session/${encodeURIComponent(participantId)}/events.jsonl`, { headers: await window.BelayAuth.headers(BASE_URL) });
+  const res = await fetch(`${BASE_URL}/api/session/${encodeURIComponent(participantId)}/events.jsonl`, {
+    headers: await window.BelayAuth.headers(BASE_URL), credentials: window.BelayAuth.credentials?.(BASE_URL) });
   if (!res.ok) throw new Error(`Export failed: ${res.status}`);
   return res.text();
 }

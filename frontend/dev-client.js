@@ -3,6 +3,9 @@
 (function () {
   "use strict";
   const $ = id => document.getElementById(id);
+  if (window.BELAY_SESSION_PROXY === true && typeof window.SOL_BACKEND_URL === "string") {
+    $("backend").value = window.SOL_BACKEND_URL;
+  }
   const base = () => $("backend").value.replace(/\/$/, "");
   const glassBox = $("glass-box"), signalsStorage = $("signals-storage");
   const assignedStance = new URL(window.location.href).searchParams.get("stance") || "peer";
@@ -23,6 +26,8 @@
   const demo = demoPresent ? readDemo(window.BELAY_CLASSROOM_DEMO) : null;
   if (demo) stance = "peer";
   let demoReady = false, demoPrefilled = false, demoCompleted = false;
+  const notebookRequired = window.BELAY_NOTEBOOK_CONTEXT !== undefined;
+  let notebookValid = false;
   let exercises = {}, dialogue, scope, identity, lastResult = null, busy = false, generation = 0;
   const askJobs = globalThis.belayAskJobs(demo ? {uuid:() => demo.request_id} : undefined);
   let temporaryMessages = [], recent = [], savedView = false;
@@ -38,10 +43,11 @@
       exercise_version:exercises[$("exercise").value]?.exercise_version} : null
   });
   function demoBlocked() {
-    return demoPresent && (!demo || !demoReady || demoCompleted || Date.now() >= demo.expires_at * 1000);
+    return (notebookRequired && !notebookValid) ||
+      (demoPresent && (!demo || !demoReady || demoCompleted || Date.now() >= demo.expires_at * 1000));
   }
   function updateDemo() {
-    if (!demoPresent) return;
+    if (!demoPresent && !notebookRequired) return;
     $("presenter-demo").hidden = false;
     $("presenter-notice").textContent = !demo || !demoReady ? "Demo configuration unavailable. Ask and Run are disabled."
       : Date.now() >= demo.expires_at * 1000 ? "Live demo expired. No new requests are permitted; earlier request recovery is unchanged."
@@ -345,6 +351,7 @@
     const response = await fetch(base() + path, {
       method: body === undefined ? "GET" : "POST",
       headers: await window.BelayAuth.headers(base()),
+      credentials: window.BelayAuth.credentials?.(base()),
       ...(body === undefined ? {} : {body: JSON.stringify({ ...body,
         ...(identity ? {institution_id: identity.institution_id, class_id: identity.class_id} : {})
       })})
@@ -368,7 +375,7 @@
     $("chat-feed").setAttribute("aria-busy", String(busy));
     $("feedback-loading").hidden = !busy;
     for (const id of ["ask", "run", "exercise", "backend", "mode"]) $(id).disabled = busy;
-    if (demoPresent) {
+    if (demoPresent || notebookRequired) {
       $("run").disabled = $("exercise").disabled = $("backend").disabled = true;
       if (demo) $("source").readOnly = $("question").readOnly = true;
       $("ask").disabled = busy || demoBlocked();
@@ -424,7 +431,7 @@
     updateBusy();
   }
   async function run() {
-    if (busy || demoPresent) return false;
+    if (busy || demoPresent || notebookRequired) return false;
     const record = startRecord("run");
     setBusy(true); $("status").textContent = "";
     lastResult = null; $("result").textContent = "Running your code…";
@@ -622,6 +629,20 @@
     $("mode").value = "study";
     updateDemo();
   });
+  if (notebookRequired) {
+    $("notebook-context").hidden = false;
+    const onState = state => {
+      notebookValid = state.valid;
+      $("notebook-status").textContent = state.message;
+      $("notebook-hash").textContent = state.sha256 ? "SHA-256: " + state.sha256 : "";
+      $("notebook-source").textContent = state.source || "";
+      updateBusy();
+    };
+    if (window.BelayNotebookContext) window.BelayNotebookContext.mount({demo, onState,
+      canCapture:() => !localBusy && !demoCompleted && !records.some(record => record.request_id &&
+        ["preparing", "queued", "running", "cancel_requested", "unknown", "completed"].includes(record.feedback))});
+    else onState({valid:false, message:"Notebook snapshot unavailable. Reopen Belay from the notebook command."});
+  }
   updateBusy();
   if (demo) {
     const expire = () => {
@@ -631,5 +652,5 @@
     };
     expire();
   }
-  if (!demoPresent || demo) loadCurriculum();
+  if ((!demoPresent || demo) && (!notebookRequired || demo)) loadCurriculum();
 })();
