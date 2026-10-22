@@ -26,10 +26,18 @@ VERSION = "info511-lab3-q4-synthetic-v1"
 
 
 @pytest.fixture
-def classroom(monkeypatch, tmp_path):
-    grants = json.loads(
-        (Path(__file__).parent / "fixtures/classroom/authorization.example.json").read_text()
-    )
+def classroom(monkeypatch, tmp_path, request):
+    selected = getattr(request, "param", None)
+    if selected is None:
+        grants = json.loads(
+            (Path(__file__).parent / "fixtures/classroom/authorization.example.json").read_text()
+        )
+        exercise, version = EX, VERSION
+    else:
+        from app.classroom.demo import authorization
+
+        grants = authorization(*selected)
+        exercise, version = selected[:2]
     auth_file = configure(monkeypatch, tmp_path, grants)
     member = Membership(**grants["subjects"]["synthetic-one"][0])
     identity = Identity(
@@ -37,8 +45,8 @@ def classroom(monkeypatch, tmp_path):
         member.class_id,
         member.learner_id,
         tuple(member.assignments.items()),
-        EX,
-        VERSION,
+        exercise,
+        version,
         tuple(member.assignments.items()),
         _grant_ref("synthetic-one", member),
     )

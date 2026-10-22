@@ -88,6 +88,36 @@ EXERCISES.append(
     }
 )
 
+EXERCISES.append(
+    {
+        "id": "info511-nhanes-wrangling",
+        "module": "wrangling-eda",
+        "order": 5,
+        "prereqs": [],
+        "title": "INFO511 NHANES · Join and reshape public readings",
+        "concept": "join coverage, repeated observations and missingness",
+        "goalText": "Retain three reading rows per selected participant and distinguish component absence from missing readings.",
+        "prompt": (
+            "Public NHANES August 2021–August 2023: a selected subset of 64 adults aged 18–79, "
+            "with 56 BPXO records. Predict schema and observational unit. Leave demographics "
+            "and bp_readings unchanged. Left-join on SEQN with one-to-one validation, then "
+            "melt BPXOSY1/2/3 into tidy_nhanes. Columns: SEQN, RIDAGEYR, reading, systolic_mm_hg, "
+            "bpxo_match. Keep integer keys and reading 1–3, all 192 rows, ages, raw values and "
+            "missing cells. bpxo_match is matched or no_BPXO_record: key coverage, not a cause. "
+            "Do not drop, fill, average or use zero as missing. Audit 58 missing readings "
+            "(34 matched, 24 unmatched). This selected unweighted subset supports no national, "
+            "clinical or causal inference. Explain decisions and disclose assistance. "
+            "Hints must not supply the assessed pipeline."
+        ),
+        "starter": (
+            "import pandas as pd\n"
+            'demographics = pd.read_csv("data/DEMO_L_selected.csv")\n'
+            'bp_readings = pd.read_csv("data/BPXO_L_selected.csv")\n'
+            "# Write your prediction, then your own join and reshape.\n"
+        ),
+    }
+)
+
 # One module per stratum (thin v0). Exercises attach to their stratum module.
 MODULES: list[dict] = [
     {

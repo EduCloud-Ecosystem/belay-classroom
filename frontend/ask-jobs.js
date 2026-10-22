@@ -13,7 +13,8 @@ globalThis.belayAskJobs = function ({ storage,
     const authorized = async () => {
       const headers = await window.BelayAuth.headers(base);
       if (expired || Date.now() >= end) throw error("request_timeout", true);
-      return globalThis.belayRequestJSON(base + path, { ...options, headers },
+      return globalThis.belayRequestJSON(base + path, { ...options, headers,
+        credentials:window.BelayAuth.credentials?.(base) },
         {validate, timeoutMs: Math.max(1, end - Date.now())});
     };
     const deadline = new Promise((resolve, reject) => {

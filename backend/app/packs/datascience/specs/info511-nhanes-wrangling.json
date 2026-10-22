@@ -1,0 +1,12 @@
+{
+  "id": "info511-nhanes-wrangling",
+  "data_files": ["data/DEMO_L_selected.csv", "data/BPXO_L_selected.csv"],
+  "checks": [{
+    "type": "nhanes_participant_readings",
+    "demographics_file": "data/DEMO_L_selected.csv",
+    "bpxo_file": "data/BPXO_L_selected.csv",
+    "demographics_var": "demographics",
+    "bpxo_var": "bp_readings",
+    "var": "tidy_nhanes"
+  }]
+}

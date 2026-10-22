@@ -11,7 +11,8 @@ import threading
 import time
 from http.server import ThreadingHTTPServer
 
-from .demo import EXERCISE, VERSION, bind_learner, check_binding
+from .assignments import EXERCISE, POLICY, VERSION
+from .demo import bind_learner, check_binding
 from .live_demo import BACKEND, budget, live_adapter, mark_started, read_turn
 
 
@@ -191,7 +192,7 @@ def start(runtime, directory, profile, grant, grant_path, turn_path):
     run.authority()
     run.assert_unblocked()
     turn = reviewed_turn(grant, turn_path)
-    check_binding(directory)
+    check_binding(directory, EXERCISE, VERSION, POLICY)
     store = execution_store()
     with store.ledger.transaction() as conn:
         if (

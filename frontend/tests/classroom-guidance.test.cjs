@@ -57,6 +57,20 @@ test('mount does not opt in or poll; checkpoint works with monitoring off',async
   assert.equal(e.calls.length,2);
 });
 
+test('NHANES guidance stays private and requires its exact registered assignment version',async()=>{
+  const e=setup();
+  e.setContext({exercise_id:'info511-nhanes-wrangling',exercise_version:'info511-nhanes-wrangling-v1',learner_id:'edu:2'});
+  await e.panel.refresh();
+  assert.ok(e.calls[0].url.endsWith('/api/classroom/info511-nhanes-wrangling/info511-nhanes-wrangling-v1'));
+  await e.button('I wrote my schema and observational-unit prediction').click();
+  assert.equal(JSON.parse(e.calls[1].options.body).action,'checkpoint');
+  const before=e.calls.length;
+  e.setContext({exercise_id:'info511-nhanes-wrangling',exercise_version:'unknown',learner_id:'edu:2'});
+  await e.panel.refresh();
+  assert.equal(e.calls.length,before);
+  assert.equal(e.container.hidden,true);
+});
+
 test('challenge and retry are explicit private actions, not inference',async()=>{
   const e=setup();
   e.setState({monitor:'active',alerts:{['a'.repeat(32)]:{rule:'hints_only',state:'open'}}});

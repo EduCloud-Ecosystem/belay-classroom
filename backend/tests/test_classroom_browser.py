@@ -9,8 +9,8 @@ from types import SimpleNamespace as NS
 
 import pytest
 
+from app.classroom.assignments import EXERCISE, NHANES, VERSION
 from app.classroom.browser_demo import BrowserBoundary, metadata, reviewed_turn
-from app.classroom.demo import EXERCISE, VERSION
 from app.classroom.live_demo import mark_started, read_turn
 from app.controls.contracts import ControlError
 from tests.classroom_offline import deny_external  # noqa: F401
@@ -290,6 +290,7 @@ def test_uncertain_shutdown_preserves_ownership_receipt(tmp_path):
     assert not receipt.exists() and not stop.exists()
 
 
+@pytest.mark.parametrize("classroom", [NHANES], indirect=True)
 def test_real_authenticated_policy_admission_and_exact_recovery(classroom, ledger, monkeypatch):  # noqa: F811
     from cryptography.fernet import Fernet
     from fastapi import FastAPI

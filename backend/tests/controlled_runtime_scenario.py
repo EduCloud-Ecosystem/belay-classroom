@@ -138,7 +138,13 @@ curriculum = client.get("/api/curriculum")
 expect(curriculum.status_code == 200)
 expect(
     [e["id"] for m in curriculum.json()["modules"] for e in m["exercises"]]
-    == ["ds-foundations", "info511-lab3-q4-synthetic", "ds-regression", "ds-mlp"]
+    == [
+        "ds-foundations",
+        "info511-lab3-q4-synthetic",
+        "info511-nhanes-wrangling",
+        "ds-regression",
+        "ds-mlp",
+    ]
 )
 run = client.post(
     "/api/run",

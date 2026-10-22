@@ -83,6 +83,9 @@ def grade(source: str, exercise: Exercise) -> RunResult:
     if any(c["type"] == "tidy_source_cells" for c in spec.get("checks", [])):
         with open(os.path.join(_HERE, "tidy_check.py"), encoding="utf-8") as fh:
             files["tidy_check.py"] = fh.read()
+    if any(c["type"] == "nhanes_participant_readings" for c in spec.get("checks", [])):
+        with open(os.path.join(_HERE, "nhanes_check.py"), encoding="utf-8") as fh:
+            files["nhanes_check.py"] = fh.read()
     files["student.py"] = source
     files["spec.json"] = json.dumps(spec)
 

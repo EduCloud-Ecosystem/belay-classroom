@@ -3,17 +3,24 @@
 (function () {
   "use strict";
   const $ = id => document.getElementById(id);
+  if (window.BELAY_SESSION_PROXY === true && typeof window.SOL_BACKEND_URL === "string") {
+    $("backend").value = window.SOL_BACKEND_URL;
+  }
   const base = () => $("backend").value.replace(/\/$/, "");
   const glassBox = $("glass-box"), signalsStorage = $("signals-storage");
   const assignedStance = new URL(window.location.href).searchParams.get("stance") || "peer";
   let stance = ["peer", "oracle", "control"].includes(assignedStance) ? assignedStance : "peer";
   const demoPresent = window.BELAY_CLASSROOM_DEMO !== undefined;
+  const classroomAssignments = [
+    ["info511-lab3-q4-synthetic", "info511-lab3-q4-synthetic-v1"],
+    ["info511-nhanes-wrangling", "info511-nhanes-wrangling-v1"]
+  ];
   function readDemo(value) {
     const fields = ["mode", "learner", "exercise_id", "exercise_version", "request_id", "expires_at", "message", "source"];
     if (!value || typeof value !== "object" || Array.isArray(value) ||
         Object.keys(value).length !== fields.length || !fields.every(key => Object.hasOwn(value, key)) ||
         value.mode !== "live" || value.learner !== "bob" ||
-        value.exercise_id !== "info511-lab3-q4-synthetic" || value.exercise_version !== "info511-lab3-q4-synthetic-v1" ||
+        !classroomAssignments.some(([id, version]) => value.exercise_id === id && value.exercise_version === version) ||
         typeof value.request_id !== "string" || !/^[A-Za-z0-9_-]{16,64}$/.test(value.request_id) ||
         typeof value.expires_at !== "number" || !Number.isFinite(value.expires_at) || value.expires_at <= 0 ||
         !Number.isFinite(new Date(value.expires_at * 1000).getTime()) ||
@@ -23,9 +30,12 @@
   const demo = demoPresent ? readDemo(window.BELAY_CLASSROOM_DEMO) : null;
   if (demo) stance = "peer";
   let demoReady = false, demoPrefilled = false, demoCompleted = false;
+  const notebookRequired = window.BELAY_NOTEBOOK_CONTEXT !== undefined;
+  let notebookValid = false;
   let exercises = {}, dialogue, scope, identity, lastResult = null, busy = false, generation = 0;
   const askJobs = globalThis.belayAskJobs(demo ? {uuid:() => demo.request_id} : undefined);
   let temporaryMessages = [], recent = [], savedView = false;
+  let unsavedRecoveryScope = null;
   let historyContext = null, liveContext = null;
   let localBusy = false, sessionBusy = false;
   let records = [], activeRecord = null, feedMessages = [], requestTarget = null;
@@ -33,15 +43,20 @@
   let selectedReply = null;
   const classroom = window.BelayClassroom?.mount({
     container:$("classroom-guidance"), base,
-    onRetry:() => { if ($("exercise").value === "info511-lab3-q4-synthetic") { stance = "peer"; $("mode").value = "study"; updateDemo(); $("question").focus?.(); } },
+    onRetry:() => { if (classroomAssignments.some(([id]) => $("exercise").value === id)) { stance = "peer"; $("mode").value = "study"; updateDemo(); $("question").focus?.(); } },
     context:() => identity ? {...identity, exercise_id:$("exercise").value,
       exercise_version:exercises[$("exercise").value]?.exercise_version} : null
   });
   function demoBlocked() {
-    return demoPresent && (!demo || !demoReady || demoCompleted || Date.now() >= demo.expires_at * 1000);
+    return (notebookRequired && !notebookValid) ||
+      (demoPresent && (!demo || !demoReady || demoCompleted || Date.now() >= demo.expires_at * 1000));
+  }
+  function canCheckUnsaved() {
+    return notebookRequired && demo && demoReady && !demoCompleted && identity &&
+      !savedView && scope && unsavedRecoveryScope === scope;
   }
   function updateDemo() {
-    if (!demoPresent) return;
+    if (!demoPresent && !notebookRequired) return;
     $("presenter-demo").hidden = false;
     $("presenter-notice").textContent = !demo || !demoReady ? "Demo configuration unavailable. Ask and Run are disabled."
       : Date.now() >= demo.expires_at * 1000 ? "Live demo expired. No new requests are permitted; earlier request recovery is unchanged."
@@ -303,6 +318,7 @@
     removeReply();
     records = []; activeRecord = null; requestTarget = null; feedMessages = [];
     temporaryMessages = []; recent = []; lastResult = null;
+    unsavedRecoveryScope = null;
     $("status").textContent = "";
     $("question").value = ""; $("result").textContent = "Run your code to see its output.";
     clearTelemetry();
@@ -345,6 +361,7 @@
     const response = await fetch(base() + path, {
       method: body === undefined ? "GET" : "POST",
       headers: await window.BelayAuth.headers(base()),
+      credentials: window.BelayAuth.credentials?.(base()),
       ...(body === undefined ? {} : {body: JSON.stringify({ ...body,
         ...(identity ? {institution_id: identity.institution_id, class_id: identity.class_id} : {})
       })})
@@ -368,10 +385,10 @@
     $("chat-feed").setAttribute("aria-busy", String(busy));
     $("feedback-loading").hidden = !busy;
     for (const id of ["ask", "run", "exercise", "backend", "mode"]) $(id).disabled = busy;
-    if (demoPresent) {
+    if (demoPresent || notebookRequired) {
       $("run").disabled = $("exercise").disabled = $("backend").disabled = true;
       if (demo) $("source").readOnly = $("question").readOnly = true;
-      $("ask").disabled = busy || demoBlocked();
+      $("ask").disabled = busy || (demoBlocked() && !canCheckUnsaved());
       updateDemo();
     }
   }
@@ -424,7 +441,7 @@
     updateBusy();
   }
   async function run() {
-    if (busy || demoPresent) return false;
+    if (busy || demoPresent || notebookRequired) return false;
     const record = startRecord("run");
     setBusy(true); $("status").textContent = "";
     lastResult = null; $("result").textContent = "Running your code…";
@@ -488,7 +505,14 @@
     }
   }
   async function ask(event = "chat") {
-    if (busy || !dialogue || demoBlocked()) { updateBusy(); return; }
+    if (busy || !dialogue) { updateBusy(); return; }
+    if (event === "chat" && canCheckUnsaved()) {
+      // A reload loses the selected snapshot. Check only the scoped receipt;
+      // askJobs.ask could admit a new turn via an operator continuation.
+      await recoverUnsaved();
+      return;
+    }
+    if (demoBlocked()) { updateBusy(); return; }
     if (event === "chat" && selectedReply && !$("question").value.trim()) {
       $("question").focus();
       return;
@@ -554,6 +578,8 @@
           : "Recovered the original request. Your current input was not submitted.") : "";
     } catch (error) {
       if (requestGeneration === generation) {
+        if (!savedView) unsavedRecoveryScope = error.uncertain && error.request_id && (notebookRequired || !error.continuationAllowed)
+          ? originalScope : null;
         recordFailure(error, record);
         let message = error.message;
         if (event === "run" && error.code !== "result_expired") {
@@ -563,7 +589,7 @@
           message = (lastResult?.ok ? "Code ran. " : "Your code raised an error. ") + context + message;
         }
         $("status").textContent = message;
-        $("ask").textContent = error.uncertain && !error.continuationAllowed ? "Check request status" : "Ask Belay";
+        $("ask").textContent = canCheckUnsaved() || (error.uncertain && !error.continuationAllowed) ? "Check request status" : "Ask Belay";
       }
     }
     finally { setBusy(false); }
@@ -582,6 +608,8 @@
       const answer = await askJobs.recover(base(), "/api/sol/jobs", $("exercise").value,
         (state, config, ref) => {if (current === generation && currentScope === scope) requestState(state, ref);});
       if (current !== generation || currentScope !== scope) return;
+      unsavedRecoveryScope = null;
+      $("ask").textContent = "Ask Belay";
       if (answer) {
         const ref = askJobs.reference(answer);
         if (answer.reply_to) {
@@ -596,9 +624,12 @@
         if (demo) demoCompleted = true;
         $("status").textContent = "Recovered the same request. No request was resubmitted.";
       }
-    } catch (error) { if (current === generation) {
+    } catch (error) { if (current === generation && currentScope === scope) {
+      if (error.phase !== "configuration") unsavedRecoveryScope = error.uncertain && error.request_id && (notebookRequired || !error.continuationAllowed)
+        ? currentScope : null;
       recordFailure(error, null); $("status").textContent = error.message;
-      $("ask").textContent = error.uncertain && !error.continuationAllowed ? "Check request status" : "Ask Belay";
+      $("ask").textContent = unsavedRecoveryScope === currentScope || (error.uncertain && !error.continuationAllowed)
+        ? "Check request status" : "Ask Belay";
     } }
     finally { setBusy(false); }
   }
@@ -615,6 +646,7 @@
   });
   window.addEventListener("belay-auth-changed", () => {
     generation++; identity = null; scope = null; clearTransient(); renderFeed([]);
+    updateBusy();
   });
   $("presenter-policy")?.addEventListener("click", () => {
     if (!demo || busy || demoBlocked()) return;
@@ -622,6 +654,20 @@
     $("mode").value = "study";
     updateDemo();
   });
+  if (notebookRequired) {
+    $("notebook-context").hidden = false;
+    const onState = state => {
+      notebookValid = state.valid;
+      $("notebook-status").textContent = state.message;
+      $("notebook-hash").textContent = state.sha256 ? "SHA-256: " + state.sha256 : "";
+      $("notebook-source").textContent = state.source || "";
+      updateBusy();
+    };
+    if (window.BelayNotebookContext) window.BelayNotebookContext.mount({demo, onState,
+      canCapture:() => !localBusy && !demoCompleted && !records.some(record => record.request_id &&
+        ["preparing", "queued", "running", "cancel_requested", "unknown", "completed"].includes(record.feedback))});
+    else onState({valid:false, message:"Notebook snapshot unavailable. Reopen Belay from the notebook command."});
+  }
   updateBusy();
   if (demo) {
     const expire = () => {
@@ -631,5 +677,5 @@
     };
     expire();
   }
-  if (!demoPresent || demo) loadCurriculum();
+  if ((!demoPresent || demo) && (!notebookRequired || demo)) loadCurriculum();
 })();

@@ -625,6 +625,11 @@
                 <p>Use your notebook and its checker separately. Run code is disabled here; this editor is not a saved notebook.</p>
                 <button id="presenter-policy" type="button">Use Oracle policy example</button>
                 <p id="presenter-policy-status" role="status" aria-live="polite"></p>
+                <section id="notebook-context" hidden aria-label="Captured notebook code">
+                    <p id="notebook-status" role="status" aria-live="polite"></p>
+                    <p id="notebook-hash" class="note"></p>
+                    <pre id="notebook-source" style="max-height: 14rem; overflow: auto; white-space: pre-wrap;"></pre>
+                </section>
             </section>
             <div class="row">
                 <label class="label" for="exercise">Exercise</label>
@@ -709,6 +714,7 @@
 <script src="ask-jobs.js?v=20261014-quotation-2"></script>
 <script src="conversation-client.js?v=20261014-quotation-2"></script>
 <script src="classroom-guidance.js"></script>
+<script src="notebook-context.js"></script>
 <script src="dev-client.js?v=20261014-quotation-2"></script>
 </body>
 </html>
