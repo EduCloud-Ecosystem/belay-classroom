@@ -48,15 +48,22 @@ do not establish NHANES acceptance.
 
 ## Handoff
 
-Implementation in progress. No NHANES job or live grant has been issued. The
+This source checkpoint precedes native runtime acceptance. The
 21 NHANES checker cases, 208 focused classroom cases and 158 frontend cases passed.
 Lint, formatting and mypy passed. The first full local suite exposed three stale
 catalog expectations and one macOS temporary-path assertion (five failed cases);
-the corrected focused regressions pass, with a full rerun in progress. Database
-matrix CI and actual native integration remain pending for this source.
+the corrected focused regressions pass. One concurrent rerun hit a transient
+ephemeral-port collision; the isolated case and the full serial suite then passed.
+Hosted SQLite, Postgres and quality CI passed at `bbc45bb`. The peripheral module
+is independently permissioned and has its own collector controls; its final
+rendered acceptance, current combined CI and actual native integration are
+recorded separately in the root demonstration evidence.
 
-The next action is to bind the frozen checker and public extracts, then qualify
-the updated native journey. The earlier native popup control passed
+The checker and public extracts are pinned in the versioned Waypoint package.
+The root demonstration handoff records the admitted revisions, actual native
+journey, provider receipts, retained failures and cleanup outcomes separately;
+this source checkpoint does not substitute for those observations.
+The earlier native popup control passed
 with zero jobs/attempts, private purge and complete cleanup; it used the prior
 frontend and inflation input and establishes only that bounded infrastructure
 behavior.

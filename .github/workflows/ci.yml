@@ -102,4 +102,4 @@ jobs:
       - name: Learner request lifecycle and control messages
         run: |
           npm ci --prefix frontend --ignore-scripts
-          node --test frontend/tests/*.test.cjs
+          node --test frontend/tests/*.test.cjs frontend/peripheral-demo/tests/*.test.mjs

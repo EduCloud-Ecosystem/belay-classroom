@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Belay · Private check-in</title><link rel="stylesheet" href="panel.css"><script type="module" src="panel.mjs"></script></head>
+<body>
+<main>
+  <header><p class="eyebrow">BELAY · OPTIONAL DEMONSTRATION</p><h1>A pause to choose your next step.</h1><p>Private, voluntary support for the NHANES practice task. No model, grade, report or automatic action.</p></header>
+  <section aria-labelledby="collection-heading">
+    <div class="section-heading"><h2 id="collection-heading">Browser check-in</h2><span id="badge">OFF</span></div>
+    <p id="status" role="status" aria-live="polite">Loading the local extension…</p>
+    <p>Start observes <strong>this browser window only</strong>, for at most <strong>10 minutes</strong>. It recognizes only the local mock AI site <code>http://127.0.0.1:8769</code> when its tab is active and this window is focused.</p>
+    <p>One yes/no observation and consent/session state stay in Chrome session memory. No URL paths, queries, page titles, prompts, content, history, screenshots or clipboard are retained or sent. A visit proves neither AI use nor any connection to this task. Other windows, devices and unobserved time remain unknown.</p>
+    <p>The Chrome host permission is optional. Collection is separate from course help and required assistance declarations; declining has no grade consequence. This standalone demo has no course, instructor or server connection.</p>
+    <label class="consent"><input type="checkbox" id="consent"> I choose this single-window mock-site check for this session.</label>
+    <div class="buttons"><button id="start">Start in this window</button><button id="pause" class="secondary" disabled>Pause</button><button id="resume" class="secondary" disabled>Resume</button><button id="revoke" class="secondary">Revoke permission</button><button id="delete" class="secondary">Delete session and reflection</button></div>
+    <p class="small">The extension badge stays visible. A worker restart pauses collection; resume is explicit and does not extend expiry. Deletion is ordinary memory removal, not a secure-erasure guarantee.</p>
+    <p id="observation" class="notice" hidden>A matching mock site was foreground-visible. It may be unrelated or permitted. This is an optional check-in, not a finding about your conduct.</p>
+    <a href="http://127.0.0.1:8769" target="_blank" rel="noopener noreferrer">Open the declared mock site</a>
+  </section>
+  <section aria-labelledby="reflection-heading">
+    <h2 id="reflection-heading">Think it through, privately</h2>
+    <p>Coaching is available with collection off. Nothing you type leaves this page, enters extension storage, or is exported. Closing/reloading, deletion, revocation or expiry clears it. Use only fictional details in a recorded demonstration.</p>
+    <div id="choices" class="buttons"><button data-choice="connected">Explore a task-related need</button><button data-choice="unrelated" class="secondary">Unrelated to my task</button><button data-choice="permitted" class="secondary">My use was permitted</button><button data-choice="challenge" class="secondary">Challenge the observation</button><button data-choice="skip" class="secondary">Skip</button></div>
+    <p id="outcome" role="status" aria-live="polite"></p>
+    <div id="coaching" hidden>
+      <p id="progress" class="eyebrow"></p>
+      <fieldset data-step="0"><legend>What were you trying to do?</legend><label for="context">Optional context, in your own words</label><textarea id="context" maxlength="500" autocomplete="off" placeholder="For example: I was unsure what one output row should represent."></textarea><p class="small">You can leave this blank or skip. No explanation or admission is required.</p></fieldset>
+      <fieldset data-step="1" hidden><legend>What support would help?</legend><label for="need">Choose a need, or prefer not to say</label><select id="need"><option value="">Choose…</option><option>Clearer instructions or policy</option><option>A small course example</option><option>Technical or accessibility support</option><option>More time or human help</option><option>Prefer not to say</option></select><label for="why">Anything else? Optional</label><textarea id="why" maxlength="500" autocomplete="off"></textarea></fieldset>
+      <fieldset data-step="2" hidden><legend>Choose a permitted alternative</legend><p>For this practice demo: course materials, your own prediction, Belay peer hints, or help from course staff. An outside provider needs the actual assignment's explicit permission.</p><label for="alternative">What would you try?</label><select id="alternative"><option value="">Choose…</option><option>Compare one row with the course materials</option><option>Write my schema and observational-unit prediction</option><option>Ask Belay for a peer hint, separately</option><option>Ask course staff for help or accessible materials</option></select></fieldset>
+      <fieldset data-step="3" hidden><legend>Decide whether anything needs correction</legend><p>Choose for yourself. A browser observation does not establish that a correction is needed. Required assistance declarations stay a separate course task.</p><label for="correction">My next step</label><select id="correction"><option value="">Choose…</option><option>Revisit my notebook and correct my own work</option><option>Review my required assistance declaration</option><option>Ask course staff what the policy permits</option><option>No correction needed; my use was permitted or unrelated</option><option>I prefer not to decide here</option></select></fieldset>
+      <fieldset data-step="4" hidden><legend>A plan you can revise or dismiss</legend><label for="if">If I encounter…</label><textarea id="if" maxlength="300" autocomplete="off"></textarea><label for="then">Then I choose to…</label><textarea id="then" maxlength="300" autocomplete="off"></textarea><label class="consent"><input type="checkbox" id="reviewed"> I have reviewed this plan. It is my choice, not a compliance agreement.</label><p class="small">No automatic Ask, save, submission, notification or follow-up is created.</p></fieldset>
+      <div class="buttons"><button id="back" class="secondary">Back</button><button id="next">Continue</button><button id="dismiss" class="secondary">Skip and clear reflection</button></div>
+    </div>
+    <div id="plan" class="notice" hidden><h3>Your reviewed plan · this page only</h3><p id="plan-text"></p><p>You can change your mind. Nothing has been shared or saved.</p><button id="revise" class="secondary">Revise</button><button id="clear-plan" class="secondary">Dismiss and clear</button></div>
+  </section>
+  <footer>Synthetic demonstration · Selected browser window only · Observation ≠ use, intent or misconduct</footer>
+</main>
+</body></html>
