@@ -125,6 +125,11 @@ class Settings:
     #   bedrock (documented stub; not live): Amazon Nova tier mapping below.
     provider: str = field(default_factory=lambda: _env("PROVIDER", "openai_compatible"))
 
+    # Portage application credentials belong to exactly one classroom deployment.
+    portage_deployment: str = field(default_factory=lambda: _env("PORTAGE_DEPLOYMENT", ""))
+    portage_institution: str = field(default_factory=lambda: _env("PORTAGE_INSTITUTION", ""))
+    portage_classroom: str = field(default_factory=lambda: _env("PORTAGE_CLASSROOM", ""))
+
     # openai_compatible — single base_url serves all tiers (Ollama/vLLM/etc).
     openai_base_url: str = field(
         default_factory=lambda: _env("OPENAI_BASE_URL", "http://localhost:11434/v1")
@@ -195,6 +200,8 @@ class Settings:
     def model_tiers(self) -> dict[str, str]:
         """Active provider's tier->concrete-model mapping ({fast, strong}). For a
         single-model self-hosted endpoint, fast and strong map to the same model."""
+        if self.provider == "portage":
+            return {"fast": "code_small", "strong": "code_large"}
         if self.provider == "anthropic":
             return {"fast": self.anthropic_model_fast, "strong": self.anthropic_model_strong}
         if self.provider == "bedrock":

@@ -57,6 +57,14 @@ def check_store() -> tuple[bool, str]:
 
 
 def check_provider(timeout: float = 3.0) -> tuple[bool, str]:
+    if settings.provider == "portage":
+        from .agent.llm import PortageProvider
+
+        try:
+            PortageProvider.validate_configuration()
+        except Exception:
+            return False, "Portage configuration invalid"
+        return True, "Portage configuration valid; scoped authenticated reachability NOT PROBED"
     if settings.provider == "openai_compatible":
         url = settings.openai_base_url.rstrip("/") + "/models"
         req = urllib.request.Request(

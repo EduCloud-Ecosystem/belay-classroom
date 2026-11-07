@@ -26,15 +26,17 @@ never changes the deterministic leak gate.
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import math
 import re
 import time
 from typing import Protocol, runtime_checkable
+from urllib.parse import urlsplit
 
 from ..config import settings
 from ..controls.contracts import ControlError
-from ..controls.runtime import model_call
+from ..controls.runtime import current, model_call
 from . import telemetry as _tel
 
 
@@ -254,6 +256,81 @@ class OpenAICompatProvider:
         return parsed
 
 
+class PortageProvider(OpenAICompatProvider):
+    """One course-bound application credential; every attempt keeps local guards.
+
+    This adapter does not replace Belay's holds with Portage monetary receipts.
+    """
+
+    name = "portage"
+
+    @staticmethod
+    def validate_configuration() -> tuple[str, str, str]:
+        binding = (
+            settings.portage_deployment,
+            settings.portage_institution,
+            settings.portage_classroom,
+        )
+        endpoint = urlsplit(settings.openai_base_url)
+        try:
+            loopback = ipaddress.ip_address(endpoint.hostname or "").is_loopback
+        except ValueError:
+            loopback = False
+        if (
+            settings.controls_mode != "enforced"
+            or not all(binding)
+            or settings.openai_api_key in {"", "EMPTY", "OPERATOR_REQUIRED"}
+            or not endpoint.hostname
+            or endpoint.username
+            or endpoint.password
+            or endpoint.query
+            or endpoint.fragment
+            or endpoint.path.rstrip("/") != "/v1"
+            or not (endpoint.scheme == "https" or (endpoint.scheme == "http" and loopback))
+        ):
+            raise ControlError("portage_configuration_required", 503)
+        return binding
+
+    def __init__(self) -> None:
+        from openai import DefaultHttpxClient, OpenAI
+
+        self._scope_binding = self.validate_configuration()
+        self._client = OpenAI(
+            base_url=settings.openai_base_url,
+            api_key=settings.openai_api_key,
+            max_retries=0,
+            timeout=_timeout(),
+            http_client=DefaultHttpxClient(trust_env=False, follow_redirects=False),
+        )
+
+    def model_for(self, tier: str) -> str:
+        try:
+            return {"fast": "code_small", "strong": "code_large"}[tier]
+        except KeyError:
+            raise ControlError("portage_tier_not_allowed", 503) from None
+
+    def _attempt(self, role: str, kwargs: dict):
+        context = current()
+        if settings.controls_mode != "enforced" or context is None:
+            raise ControlError("verified_execution_required", 503)
+        scope = context.scope
+        if (scope.deployment, scope.institution, scope.classroom) != self._scope_binding:
+            raise ControlError("portage_scope_mismatch", 403)
+        if not re.fullmatch(r"[A-Za-z0-9_-]{8,128}", scope.learner):
+            raise ControlError("portage_subject_binding_required", 403)
+        # Never accept an asserted learner from the browser, messages or caller headers.
+        # Portage authenticates this application credential and rechecks membership.
+        kwargs = {**kwargs, "extra_headers": {"X-Portage-Subject": scope.learner}}
+        try:
+            return super()._attempt(role, kwargs)
+        except Exception as exc:
+            # Portage validates its text-only request before dispatch. Its 400/422
+            # is not an engine JSON-format negotiation signal; never resend it.
+            if getattr(exc, "status_code", None) in {400, 422}:
+                raise ControlError("portage_request_refused", 503) from None
+            raise
+
+
 class AnthropicProvider:
     """Live hosted-convenience path. Reads ANTHROPIC_API_KEY; tier maps to Claude
     model ids (settings.anthropic_model_fast/strong)."""
@@ -383,6 +460,7 @@ from ..controls.local_demo import DemoProvider
 
 _PROVIDERS: dict[str, type] = {
     "openai_compatible": OpenAICompatProvider,
+    "portage": PortageProvider,
     "anthropic": AnthropicProvider,
     "bedrock": BedrockProvider,
     "local_stub": DemoProvider,
