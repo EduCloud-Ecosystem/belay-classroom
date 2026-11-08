@@ -24,6 +24,100 @@ from app.store.models import Base, Participant
 from app.store.scoped import ScopedStore, register, scoped_store
 from tests.http_auth import configure, token
 
+ROSTER_ID = "47a8ed4608e14957bf74ac18f93655c1"
+
+
+def use_roster_identity(boundary):
+    auth_file, authorization = boundary[3:]
+    member = authorization["subjects"]["subject-a"][0]
+    member.update(
+        learner_id=ROSTER_ID,
+        learner_id_kind="cairn_roster_v1",
+        grant_generation="a45abc18d8ca4ae6a7b32def7048d2ac",
+    )
+    auth_file.write_text(json.dumps(authorization))
+    return member
+
+
+def test_explicit_roster_identity_at_actual_classroom_http_edge(boundary):
+    use_roster_identity(boundary)
+    response = boundary[0].post(
+        "/api/participant",
+        json={"anon_code": ROSTER_ID, "consent": True},
+        headers=headers(),
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["anon_code"] == ROSTER_ID
+    response = boundary[0].post(
+        "/api/run",
+        json={"participant_id": ROSTER_ID, "exercise_id": "echo-1", "source": "code"},
+        headers=headers(),
+    )
+    assert response.status_code == 200, response.text
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ["substituted_learner", "wrong_class", "revoked", "stale_assignment", "wrong_issuer"],
+)
+def test_roster_binding_refusals_before_runner_or_provider(boundary, mutation):
+    member = use_roster_identity(boundary)
+    body = {"participant_id": ROSTER_ID, "exercise_id": "echo-1", "source": "code"}
+    auth = headers()
+    if mutation == "substituted_learner":
+        body["participant_id"] = "95bc972abaec499498b84ddcf38ae8fa"
+    elif mutation == "wrong_class":
+        auth.update({"X-Belay-Institution": "inst-a", "X-Belay-Class": "class-b"})
+    elif mutation == "revoked":
+        boundary[4]["subjects"]["subject-a"] = []
+    elif mutation == "stale_assignment":
+        member["assignments"]["echo-1"] = "old"
+    else:
+        auth = {"Authorization": "Bearer " + token("subject-a", iss="https://other.invalid")}
+    boundary[3].write_text(json.dumps(boundary[4]))
+    response = boundary[0].post("/api/run", json=body, headers=auth)
+    assert response.status_code == (401 if mutation == "wrong_issuer" else 404)
+    assert boundary[2] == []
+
+
+@pytest.mark.parametrize(
+    "kind,label",
+    [
+        ("host_numeric_v1", ROSTER_ID),
+        ("cairn_roster_v1", "edu:2"),
+        ("cairn_roster_v1", ROSTER_ID.upper()),
+        ("cairn_roster_v1", ROSTER_ID[:-1]),
+        ("cairn_roster_v1", ROSTER_ID + "0"),
+        ("cairn_roster_v1", ROSTER_ID + "\n"),
+        ("cairn_roster_v1", "learner@example.invalid"),
+        ("cairn_roster_v1", "student-name"),
+        ("unknown", ROSTER_ID),
+    ],
+)
+def test_roster_label_requires_explicit_kind_and_exact_format(boundary, kind, label):
+    member = use_roster_identity(boundary)
+    member.update(learner_id=label, learner_id_kind=kind)
+    boundary[3].write_text(json.dumps(boundary[4]))
+    assert boundary[0].get("/api/curriculum", headers=headers()).status_code == 503
+    assert boundary[2] == []
+
+
+def test_roster_label_does_not_expand_quad_or_pii_contract(boundary):
+    use_roster_identity(boundary)
+    response = boundary[0].post(
+        "/quad/v1/turn",
+        json={"pseudo_id": ROSTER_ID, "exercise_id": "echo-1", "stance": "control"},
+        headers=headers(),
+    )
+    assert response.status_code == 422
+    response = boundary[0].post(
+        "/api/run",
+        json={"participant_id": ROSTER_ID, "exercise_id": "echo-1", "email": "x@y.test"},
+        headers=headers(),
+    )
+    assert response.status_code == 422
+    assert boundary[2] == []
+
 
 @pytest.fixture
 def boundary(monkeypatch, tmp_path):

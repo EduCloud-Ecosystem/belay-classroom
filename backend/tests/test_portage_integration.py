@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 """Real classroom provider + SDK + Portage HTTP/ledger; synthetic upstream only."""
 
+import asyncio
 import importlib.util
 import json
 import os
@@ -10,17 +11,102 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
+from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 from openai import APIStatusError
+from starlette.requests import Request
 
 from app.agent.llm import PortageProvider, provider_class
+from app.auth import authorize, execution_grant, recheck_grant
 from app.config import settings
 from app.controls.contracts import ControlError, Limits, Scope
 from app.controls.runtime import operation
 from conftest import controls_policy
+from tests.http_auth import configure, token
 
 CONTROL_SCOPE = Scope("test", "i", "c", "learner01")
 
 PORTAGE_REVISION = "79742746b10ace18e498111dd5a8f3227edd995c"
+ROSTER_ID = "47a8ed4608e14957bf74ac18f93655c1"
+
+
+def roster_authorization(monkeypatch, tmp_path):
+    authorization = {
+        "exercise_versions": {"echo-1": "v1"},
+        "subjects": {
+            "verified-subject": [
+                {
+                    "institution_id": "i",
+                    "class_id": "c",
+                    "learner_id": ROSTER_ID,
+                    "learner_id_kind": "cairn_roster_v1",
+                    "grant_generation": "a45abc18d8ca4ae6a7b32def7048d2ac",
+                    "assignments": {"echo-1": "v1"},
+                }
+            ],
+        },
+    }
+    path = configure(monkeypatch, tmp_path, authorization)
+    request = Request({"type": "http", "method": "POST", "path": "/api/sol/turn", "headers": []})
+    request._body = json.dumps({"participant_id": ROSTER_ID, "exercise_id": "echo-1"}).encode()
+    identity = asyncio.run(
+        authorize(
+            request,
+            HTTPAuthorizationCredentials(
+                scheme="Bearer",
+                credentials=token("verified-subject"),
+            ),
+        )
+    )
+    return identity, path, authorization
+
+
+def test_verified_roster_label_reaches_actual_gateway(connected, ledger, monkeypatch, tmp_path):
+    provider, portage, state = connected
+    identity, _, _ = roster_authorization(monkeypatch, tmp_path)
+    portage.member("course01", identity.learner_id, 100000)
+    grant = execution_grant(identity)
+    scope = Scope("test", identity.institution_id, identity.class_id, identity.learner_id)
+    with operation(ledger, scope, "roster-success", guard=lambda: recheck_grant(grant)):
+        assert invoke(provider) == {"hint": "check missingness"}
+    assert state["gateway_calls"] == state["calls"] == 1
+    assert state["authority_paths"]
+    assert set(state["authority_paths"]) == {"/internal/member/" + ROSTER_ID}
+    assert portage.usage("course01", ROSTER_ID)["committed"] == 15
+    assert portage.usage("course01", "learner01")["committed"] == 0
+
+
+@pytest.mark.parametrize(
+    "change", ["revoked", "stale_assignment", "substituted_principal", "renewed"]
+)
+def test_roster_execution_grant_rechecked_before_dispatch(
+    configured, ledger, monkeypatch, tmp_path, change
+):
+    identity, path, authorization = roster_authorization(monkeypatch, tmp_path)
+    grant = execution_grant(identity)
+    if change == "revoked":
+        authorization["subjects"].clear()
+    elif change == "stale_assignment":
+        authorization["exercise_versions"]["echo-1"] = "v2"
+    elif change == "renewed":
+        authorization["subjects"]["verified-subject"][0]["grant_generation"] = (
+            "3d7e9b1e9d3e452ab2f405b85b56685c"
+        )
+    else:
+        authorization["subjects"]["other-subject"] = authorization["subjects"].pop(
+            "verified-subject"
+        )
+    path.write_text(json.dumps(authorization))
+    provider = PortageProvider()
+    try:
+        scope = Scope("test", identity.institution_id, identity.class_id, identity.learner_id)
+        with operation(ledger, scope, "roster-revoked", guard=lambda: recheck_grant(grant)):
+            with pytest.raises(HTTPException) as error:
+                invoke(provider)
+        assert error.value.status_code == 404
+        assert ledger.summary()["attempts"] == 0
+    finally:
+        provider._client.close()
 
 
 @pytest.fixture
@@ -102,6 +188,7 @@ def connected(configured, ledger, tmp_path, monkeypatch):
     state = {
         "calls": 0,
         "gateway_calls": 0,
+        "authority_paths": [],
         "active": True,
         "usage": True,
         "repair": False,
@@ -113,6 +200,7 @@ def connected(configured, ledger, tmp_path, monkeypatch):
             pass
 
         def do_GET(self):
+            state["authority_paths"].append(self.path)
             self.send_response(200)
             self.end_headers()
             self.wfile.write(

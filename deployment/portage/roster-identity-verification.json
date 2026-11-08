@@ -1,0 +1,111 @@
+{
+  "date": "2026-11-08",
+  "base": "b4b2c3c58539b8b7258cd61bfd9c911ffcddab25",
+  "scope_commit": "ccc7694e07a99ffffc266b55bd3cfa8443edc885",
+  "branch": "codex/classroom-roster-identity-v1",
+  "source_sha256": {
+    "backend/app/auth.py": "fae44a0070b7ae65aa493a6f5108513ef94c4d4aeb89ca615e8ccfb3b3692da4",
+    "backend/tests/test_auth_isolation.py": "ac4059dbb651ec1e7aa1f22cc19819bdd9984f7eb6f1e0087cde9cd9695ca96b",
+    "backend/tests/test_execution_grants.py": "f5942ba579f0275c35fce6e51a8bc532a6ea160c901f829efe8eeec876b3187a",
+    "backend/tests/test_execution_data.py": "d69fdc224ad12004de78e615ad92527f4a8fa61f86889ffe0bb020535e64b223",
+    "backend/tests/test_portage_integration.py": "1b35df1a948e39aeaae4159b4bada5ea80c00cb171d480675f091cfa6997eb6e"
+  },
+  "portage_revision": "79742746b10ace18e498111dd5a8f3227edd995c",
+  "environment": {
+    "python": "CPython 3.12.13",
+    "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+    "fresh": true,
+    "locked_packages": 56,
+    "lock": "deployment/portage/requirements.lock",
+    "lock_sha256": "37fceed6273fcd647413d4e78cdd12b2177c586ec1d258b56d971b859f025a5f",
+    "commands": [
+      {
+        "command": [
+          "uv",
+          "venv",
+          "--python",
+          "3.12.13",
+          ".venv"
+        ],
+        "exit_code": 0
+      },
+      {
+        "command": [
+          "uv",
+          "pip",
+          "sync",
+          "--python",
+          ".venv/bin/python",
+          "--require-hashes",
+          "deployment/portage/requirements.lock"
+        ],
+        "exit_code": 0
+      }
+    ]
+  },
+  "focused": {
+    "tests": 229,
+    "passed": 229,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 25.808,
+    "skip_reasons": []
+  },
+  "full_sqlite": {
+    "tests": 1132,
+    "passed": 1112,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 20,
+    "seconds": 327.966,
+    "skip_reasons": [
+      "PowerShell unavailable",
+      "disposable PostgreSQL DSN not configured",
+      "requires isolated CONTROL_TEST_DATABASE_URL PostgreSQL",
+      "requires isolated CONTROL_TEST_DATABASE_URL PostgreSQL database",
+      "set RUN_LLM_EVALS=1 with a reachable tutor + judge endpoint",
+      "verifier-contract sibling checkout not present; set VERIFIER_CONTRACT_DIR"
+    ]
+  },
+  "full_command": {
+    "command": [
+      "../.venv/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "--junitxml=../output/roster-identity-v1/full-v2.xml"
+    ],
+    "exit_code": 0,
+    "timed_out": false
+  },
+  "quality": {
+    "ruff_check": "PASS",
+    "ruff_format": "PASS: 192 files",
+    "mypy": "PASS: 185 source files"
+  },
+  "raw_evidence": {
+    "output/roster-identity-v1/environment-0.log": "2c1e5c021ef59d6384f9147c7b7e37b25cc006875b68e04d25bb714886b1e0b2",
+    "output/roster-identity-v1/environment-1.log": "b16a53a48c08fb1a64f9bb12e10d2d5963c6bb11a2fcf14d66b445dd0f2b5029",
+    "output/roster-identity-v1/environment-commands.json": "d8c555b3d51633adcc0bc29a58d7f6bd3f0c0c6a4022a55aaccc66b9a120f04b",
+    "output/roster-identity-v1/focused-v2.log": "e1e684e6c7a7804dd91f3012694d4827f8d2e945f0cfff1f95d3d59fb7ccb41a",
+    "output/roster-identity-v1/focused-v2.xml": "cd1bfe448674c361c6caf1d078590c490ad349c2d154a9a6d8827c28405827a8",
+    "output/roster-identity-v1/format-v2.log": "41a62d87511b8bcc0118c99cb88aa7540d6658c1e2577dab1f347074aa566664",
+    "output/roster-identity-v1/full-v2-command.json": "f9d5dcad770315394e589647495c842358f5508e2a23387200e2247a6bc218ee",
+    "output/roster-identity-v1/full-v2.log": "fb9b4a9d3377a84ac8000a091225ec4dd692fdd7a3eec48ee277deba320f254d",
+    "output/roster-identity-v1/full-v2.xml": "49add7c36e2de734573ae37f8616d4e00e3c938407c3bbaa6d1ece705de69ed7",
+    "output/roster-identity-v1/lint-v2.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "output/roster-identity-v1/mypy-v2.log": "fcb9d178f62a58f1386d745582b884699c8bafc0544c29de6a57896c4dd1a8b5",
+    "output/roster-identity-v1/offline-preparation-20261108.zip": "9d90ebc3b6830b081e0fa45814e11ca3fec5b4e463dbffff77cf9757de6ca821"
+  },
+  "evidence_retention": "Raw outputs and original offline failures retained locally in ignored output/roster-identity-v1; hashes recorded here. Hosted evidence tracked separately in EduCloud coordination record.",
+  "exercised": "Actual signed classroom HTTP boundaries and actual SDK/Portage gateway/ledger with synthetic upstream only; 21 provider controls, authority path and request counting.",
+  "limitations": [
+    "Consumer proposal only; trusted Waypoint/Cairn producer not integrated.",
+    "Authority must issue never-reused generations and prevent stale or rolled-back snapshots; identical old-file rollback remains possible.",
+    "Legacy grant references unchanged, without generation fencing.",
+    "No browser journey, actual model, private records, deployment, merge or cloud operations.",
+    "PostgreSQL and exact-head hosted CI pending at local checkpoint."
+  ],
+  "historical_failures": "Original offline red controls, denied sockets, timeout and grant-restoration liability preserved in hashed offline preparation ZIP; not relabeled as passes."
+}
