@@ -60,6 +60,9 @@ class Settings:
     auth_authorization_file: str = field(
         default_factory=lambda: _env("AUTH_AUTHORIZATION_FILE", "")
     )
+    auth_authority_state_file: str = field(
+        default_factory=lambda: _env("AUTH_AUTHORITY_STATE_FILE", "")
+    )
     # Dialogue saving is independently opt-in and requires an approved policy.
     dialogue_enabled: bool = field(default_factory=lambda: _envbool("DIALOGUE_ENABLED", False))
     dialogue_policy_id: str = field(default_factory=lambda: _env("DIALOGUE_POLICY_ID", ""))

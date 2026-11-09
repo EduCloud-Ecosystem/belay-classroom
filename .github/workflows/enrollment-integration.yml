@@ -1,0 +1,39 @@
+name: Classroom enrollment integration
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  native-enrollment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: EduCloud-Ecosystem/cairn
+          ref: 0cf3158fdf5bbbecc52d3cc9cd88ef33bdfb63fc
+          path: dependencies/cairn
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: EduCloud-Ecosystem/portage
+          ref: 79742746b10ace18e498111dd5a8f3227edd995c
+          path: dependencies/portage
+          persist-credentials: false
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: dependencies/cairn/go.mod
+          cache-dependency-path: dependencies/cairn/go.sum
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+      - name: Install locked dependencies
+        run: python -m pip install --require-hashes -r deployment/portage/requirements.lock
+      - name: Exercise native enrollment and actual synthetic transport
+        run: python deployment/enrollment/evaluate.py --cairn dependencies/cairn --portage dependencies/portage --output output/enrollment-native
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-enrollment-evidence
+          path: output/enrollment-native/

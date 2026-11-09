@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal, Self
@@ -15,6 +16,8 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .authority_state import Authority
+from .authority_state import check as check_authority
 from .config import settings
 
 
@@ -63,6 +66,7 @@ class Authorization(BaseModel):
     exercise_versions: dict[str, str]
     subjects: dict[str, list[Membership]]
     teaching_policies: dict[str, TeachingPolicy] = Field(default_factory=dict)
+    authority: Authority | None = None
 
 
 @dataclass(frozen=True)
@@ -244,7 +248,23 @@ def _configuration() -> tuple[str, Authorization]:
         public_key = load_pem_public_key(key.encode())
         if not isinstance(public_key, RSAPublicKey) or public_key.key_size < 2048:
             raise ValueError
-    except (OSError, ValueError, TypeError):
+        if settings.auth_authority_state_file or authorization.authority is not None:
+            if not settings.auth_authority_state_file or authorization.authority is None:
+                raise ValueError
+            if any(
+                m.learner_id_kind != "cairn_roster_v1"
+                for members in authorization.subjects.values()
+                for m in members
+            ):
+                raise ValueError
+            check_authority(
+                settings.auth_authority_state_file,
+                authorization.authority,
+                authorization.model_dump(),
+                settings.auth_issuer,
+                settings.auth_audience,
+            )
+    except (OSError, ValueError, TypeError, sqlite3.Error):
         raise HTTPException(503, "authentication not configured") from None
 
     return key, authorization
