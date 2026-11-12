@@ -45,7 +45,7 @@ and accounts for its explicit repair request.
 
 ## Reproduce without a model
 
-Use a clean Portage checkout at `79742746b10ace18e498111dd5a8f3227edd995c`.
+Use a clean Portage checkout at `709f5aba85dd2e56f87e9f5c32a2ac7438268ee5`.
 The tests reject a different commit or tracked source edits. Python 3.12.13 was
 used locally (macOS arm64); Linux CI is separate evidence.
 

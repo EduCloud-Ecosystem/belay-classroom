@@ -26,7 +26,7 @@ from tests.http_auth import configure, token
 
 CONTROL_SCOPE = Scope("test", "i", "c", "learner01")
 
-PORTAGE_REVISION = "79742746b10ace18e498111dd5a8f3227edd995c"
+PORTAGE_REVISION = "709f5aba85dd2e56f87e9f5c32a2ac7438268ee5"
 ROSTER_ID = "47a8ed4608e14957bf74ac18f93655c1"
 
 
@@ -165,7 +165,7 @@ def test_missing_or_cross_class_context_never_dispatches(configured, ledger):
 
 
 @pytest.fixture
-def connected(configured, ledger, tmp_path, monkeypatch):
+def connected(configured, ledger, tmp_path, monkeypatch, request):
     root = os.environ.get("PORTAGE_CHECKOUT")
     if not root:
         pytest.skip("PORTAGE_CHECKOUT required for actual component integration")
@@ -252,6 +252,7 @@ def connected(configured, ledger, tmp_path, monkeypatch):
             "max_output_tokens": 100,
             "max_request_tokens": 10000,
             "operation": "chat/completions",
+            "synthetic": True,
         }
         for name in ["code_small", "code_large"]
     }
@@ -263,6 +264,7 @@ def connected(configured, ledger, tmp_path, monkeypatch):
         "inference",
         origin,
         "authority",
+        shadow_decider=gateway.ShadowDecider() if getattr(request, "param", False) else None,
     )
 
     class CountedHandler(gateway.Handler):
