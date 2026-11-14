@@ -1,0 +1,140 @@
+{
+  "date": "2026-11-08",
+  "base": "0be46ae9a3154e9f9e17917cc8a6d6d3aafe8433",
+  "branch": "codex/classroom-enrollment-authority-v1",
+  "dependencies": {
+    "cairn": "0cf3158fdf5bbbecc52d3cc9cd88ef33bdfb63fc",
+    "portage": "79742746b10ace18e498111dd5a8f3227edd995c"
+  },
+  "source_sha256": {
+    "backend/app/auth.py": "41d96f81c5aa7dc0fedb4ff3bd21a1f5a780e176bd23086dc98589a175470239",
+    "backend/app/config.py": "93530c3d4eb25df120928286c62244531645a490d482eb46616b6435920e77bc",
+    "backend/app/authority_state.py": "c2d4e894a8c50baacaab021a3d2f6daa8f18bf3c639d004dddcf60b13f0a12f7",
+    "backend/tests/test_enrollment_authority.py": "f1a68c5b0d69c56996b4c348bc0a26fd3522a40d8a5ff2b9fd0aca0b1850e926",
+    "backend/tests/test_enrollment_portage.py": "7fe3edbcdaff9193786f4a99701ae3ebb32c2c4fc85f5be0ad23c107f97f7e69",
+    "deployment/enrollment/evaluate.py": "51a2ada7601c425318b24a6ab2231dc31b397ab93c11dd9ba1934f1e644723f4",
+    "deployment/enrollment/sources.json": "a9ecb9974cdfaba338e1eb722a93750d2d67bbe191f053ea8cc43170e2e59e1c",
+    ".github/workflows/enrollment-integration.yml": "388fcce46337cb6567041e3bfb67dc89658163b997f6c3d04d76c06f6083f153"
+  },
+  "environment": {
+    "python": "CPython 3.12.13",
+    "fresh": true,
+    "lock": "deployment/portage/requirements.lock",
+    "lock_sha256": "37fceed6273fcd647413d4e78cdd12b2177c586ec1d258b56d971b859f025a5f"
+  },
+  "full_local": {
+    "tests": 1154,
+    "passed": 1132,
+    "skipped": 22,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 153.85,
+    "skip_reasons": [
+      "PowerShell unavailable",
+      "disposable PostgreSQL DSN not configured",
+      "native Cairn exporter fixtures not configured",
+      "requires isolated CONTROL_TEST_DATABASE_URL PostgreSQL",
+      "requires isolated CONTROL_TEST_DATABASE_URL PostgreSQL database",
+      "set RUN_LLM_EVALS=1 with a reachable tutor + judge endpoint",
+      "verifier-contract sibling checkout not present; set VERIFIER_CONTRACT_DIR"
+    ]
+  },
+  "native_acceptance": {
+    "tests": 22,
+    "passed": 22,
+    "skipped": 0,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 1.649,
+    "skip_reasons": []
+  },
+  "required_checks": [
+    {
+      "command": [
+        "../.venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "."
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "../.venv/bin/python",
+        "-m",
+        "ruff",
+        "format",
+        "--check",
+        "."
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "../.venv/bin/python",
+        "-m",
+        "mypy"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "../.venv/bin/python",
+        "-m",
+        "pytest",
+        "-q",
+        "--junitxml=../output/enrollment-v1/full.xml"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "raw_evidence_sha256": {
+    "output/enrollment-v1/format.log": "c0f9c747ad491bb65b3a843ef99f08d2d00c7aee3b8ca1e196a8644a0297f026",
+    "output/enrollment-v1/environment.log": "cb5c1b340a0586e5ff7721af0283ac0f53b2c4639fb62877984f0751cf44b815",
+    "output/enrollment-v1/full.log": "468b55b40248960a9464f1de1a6a2d1db89017c93f8658a80bf50ee7d223a10b",
+    "output/enrollment-v1/lint.log": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "output/enrollment-v1/consumer-unit.log": "1564208b482b81e72a0030053ec34f2f59d11f755f1a272a3f47fd18c5cd7275",
+    "output/enrollment-v1/checks.json": "c87fad5dd40e963ea7fd57c50b48e0a263822f408792334cbbf88ee55bb477f9",
+    "output/enrollment-v1/mypy.log": "d24a734c10c9801a603600ac77329c61390c3606da145d04e6cc74b4c8af6e17",
+    "output/enrollment-v1/consumer-unit.xml": "521e701329745589844c91cff0d4df4a656d79b0d44fb584597ffd2c09c46a42",
+    "output/enrollment-v1/full.xml": "eb57b679f2bdf87e3f0732317bc3402221df416f8f5bc405718ed15da6cb036d",
+    "output/enrollment-v1/native-1/1.log": "76730d95eaad20667e510069d196f1fdcdb5f96d8fc973cc0736b5d8cb29299b",
+    "output/enrollment-v1/native-1/0.log": "e0ec1ffea4fc76f20905b4234bb63176de454464f159d7eea6a3b3d6e499c47d",
+    "output/enrollment-v1/native-1/commands.json": "43883c3ef1c5db4e5a02f44ff3cb2e10010faf686b16d0c87ac935f419a5774c",
+    "output/enrollment-v1/native-1/acceptance.xml": "2e6e3fc58ec6314abc7a3ad211719350f7fc407acfe45ce1b7f0b6ff99af9d03",
+    "output/enrollment-v1/native-2/1.log": "e2289c230135b682d66e48107f8caab30f5b37878e8daf2e9fb92df9aebb1375",
+    "output/enrollment-v1/native-2/0.log": "11c221b7130bef33173837d9859abbfdbe43affda029c69c20f40c7b6e00f383",
+    "output/enrollment-v1/native-2/commands.json": "bd1e65cf43f28dc2f2714062becedb813e0ad8dc9a4fc584ec20459052a109f4",
+    "output/enrollment-v1/native-2/acceptance.xml": "f23ffe3289ee5fa4f002f4f97f1e33c48ea880263cef5dbc03ad7641121527fc",
+    "output/enrollment-v1/native-final/1.log": "e2289c230135b682d66e48107f8caab30f5b37878e8daf2e9fb92df9aebb1375",
+    "output/enrollment-v1/native-final/0.log": "e80fe2d6c4a49881c4af089487be7af770721d358575a9f7995fc95f7fc716c2",
+    "output/enrollment-v1/native-final/commands.json": "f89fc5be09a4dab001e8cdbc3ff37e25778608168deaa28b0107a463e874b575",
+    "output/enrollment-v1/native-final/acceptance.xml": "c1b0a811232db404e95add3dae9feaf6bc5d7a0da586758e8baf7e0aa2fa1e7c",
+    "output/enrollment-v1/native-final/fixtures/active.json": "658c765368731635eb192e80b7355ac5d0c74615529ea39bb97e5ccc66cbfe18",
+    "output/enrollment-v1/native-final/fixtures/stale-assignment.json": "af9350b6b72b064180658eae83dd65b64ae8bb0caf9b750229a66aac51150f12",
+    "output/enrollment-v1/native-final/fixtures/renewed.json": "bec449958e2253409915265b6fa33bef2007404803f4ebf9d94134d860df29d2",
+    "output/enrollment-v1/native-final/fixtures/refresh.json": "0dd1a77faff79fa1a409cd1cefa11c53241b49619c6be133197b3ba500170fab",
+    "output/enrollment-v1/native-final/fixtures/revoked.json": "c85357c88fcbccdabf6f2590b5ad2246272551827a3fb57dc22113067c60f713",
+    "output/enrollment-v1/native-2/fixtures/active.json": "7691aa0e0b02a139d9dbeda99f08ed0da87b89cdf85e35639aa8c51737d68d16",
+    "output/enrollment-v1/native-2/fixtures/stale-assignment.json": "68fc5cfecb8243217e008ff5e3624c1736022f0fa172c251291a9de04755916c",
+    "output/enrollment-v1/native-2/fixtures/renewed.json": "4fa65b068aceedc143a69757abba021d3690fe7a55f51b82d693612467207bb3",
+    "output/enrollment-v1/native-2/fixtures/refresh.json": "676d0487c0df3a939b618504b6310394a4a028ddeb033d5390a4fe1190c29298",
+    "output/enrollment-v1/native-2/fixtures/revoked.json": "5018db9c8ba5ef4d0503ba14667a8241cbb4c49414811daf01d1f1087a3fb653",
+    "output/enrollment-v1/native-1/fixtures/active.json": "b8e07428fce6acc6271529b4277de64fd2c9faf384675e46e63dea98a9316abe",
+    "output/enrollment-v1/native-1/fixtures/stale-assignment.json": "26e396b262f9b71a89e17a1b5cae3d4dc00c81efb942909663b36fd2378a15f1",
+    "output/enrollment-v1/native-1/fixtures/renewed.json": "cbe2995e0633f4ff3171fb5acaf2f9f0b03b9b67564b5da8203ce2a05f956cfb",
+    "output/enrollment-v1/native-1/fixtures/refresh.json": "cc6fa5b957cd75e946a02aed639e06abf1ed3b77703100331560e30430151e4f",
+    "output/enrollment-v1/native-1/fixtures/revoked.json": "a3326345ee41b01528a6e0a41bb7ed265cd89a637138bca4707c3870e08239cd"
+  },
+  "retained_failure": "native-1 transport refused mismatched synthetic institution/class; fixture corrected, scope enforcement unchanged",
+  "qualification": "Synthetic operator-reviewed enrollment export only; not live IdP/account linking or whole classroom acceptance",
+  "limitations": [
+    "Revocation latency bounded by original expiry <=300 seconds",
+    "Unobserved remove/reactivate events between exports and privileged rollback of both journals remain outside protection",
+    "Portage budget/member registration is separately operator-managed; synthetic membership responder only",
+    "Ordinary suite skips 2 native-fixture tests; dedicated evaluator ran them without skips",
+    "Source unchanged after verification; hosted CI recorded separately in coordinator",
+    "No private records, model calls, cloud activation, merge or deployment"
+  ]
+}

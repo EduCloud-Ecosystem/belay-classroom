@@ -172,17 +172,21 @@ def arm_inference_window(directory: Path, manifest: dict) -> dict:
 def validate_provider() -> None:
     from importlib.util import find_spec
 
-    from .agent.llm import _timeout, provider_class
+    from .agent.llm import PortageProvider, _timeout, provider_class
     from .config import settings
 
     provider_class(settings.provider)  # Selection only, never construct an SDK.
-    if settings.provider not in {"openai_compatible", "anthropic", "local_stub"}:
+    if settings.provider not in {"openai_compatible", "portage", "anthropic", "local_stub"}:
         raise ValueError("provider is not implemented for controlled execution")
     _timeout()
-    sdk_module = {"openai_compatible": "openai", "anthropic": "anthropic"}.get(settings.provider)
+    if settings.provider == "portage":
+        PortageProvider.validate_configuration()
+    sdk_module = {"openai_compatible": "openai", "portage": "openai", "anthropic": "anthropic"}.get(
+        settings.provider
+    )
     if sdk_module and find_spec(sdk_module) is None:
         raise ValueError("selected provider SDK must be installed")
-    if settings.provider == "openai_compatible":
+    if settings.provider in {"openai_compatible", "portage"}:
         from urllib.parse import urlsplit
 
         if settings.openai_thinking_mode not in {

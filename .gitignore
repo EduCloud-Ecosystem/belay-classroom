@@ -51,3 +51,6 @@ _git_locks_to_delete/
 
 # Generated offline UI verification page (source is build-feedback-fixture.cjs)
 frontend/tests/fixtures/generated-feedback-preview.html
+
+# Local integration evidence; publish reviewed summaries, never raw operator state.
+/output/

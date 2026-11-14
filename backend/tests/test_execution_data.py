@@ -1,12 +1,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 import json
+from dataclasses import replace
 
 import pytest
 from cryptography.fernet import Fernet
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from app.auth import recheck_grant
+from app.auth import Membership, _grant_ref, recheck_grant
 from app.controls.contracts import ControlError
 from app.controls.data import ExecutionData, bindings, data
 from app.controls.ledger import metadata
@@ -94,6 +95,29 @@ def test_revoked_original_cannot_load_publish_or_read(execution_data):
     ]:
         with pytest.raises(HTTPException):
             action()
+    with store.ledger.transaction() as conn:
+        assert conn.execute(select(data.c.kind).where(data.c.id == ref)).scalar_one() == "pending"
+
+
+@pytest.mark.parametrize("grant_boundary", ["roster"], indirect=True)
+def test_renewed_roster_cannot_resume_or_read_old_job(execution_data):
+    store, identity, path, auth = execution_data
+    job = store.submit(identity, "stable", {}, "api")
+    claimed = store.admission.claim()
+    ref = store.stage(claimed, ANSWER)
+    member = auth["subjects"]["original"][0]
+    member["grant_generation"] = "3d7e9b1e9d3e452ab2f405b85b56685c"
+    path.write_text(json.dumps(auth))
+    renewed = replace(identity, grant_ref=_grant_ref("original", Membership.model_validate(member)))
+    for action in [
+        lambda: store.load(claimed),
+        lambda: store.publish(claimed, ref),
+        lambda: store.status(identity, job["id"]),
+    ]:
+        with pytest.raises(HTTPException):
+            action()
+    with pytest.raises(ControlError, match="job_unavailable"):
+        store.status(renewed, job["id"])
     with store.ledger.transaction() as conn:
         assert conn.execute(select(data.c.kind).where(data.c.id == ref)).scalar_one() == "pending"
 

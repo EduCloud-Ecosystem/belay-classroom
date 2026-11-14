@@ -1,0 +1,42 @@
+{
+  "stage": "roster_identity_consumer_v2",
+  "date": "2026-11-08",
+  "base": "b4b2c3c58539b8b7258cd61bfd9c911ffcddab25",
+  "branch": "codex/classroom-roster-identity-v1",
+  "worktree": "/Users/gregchism/dev/.educloud-worktrees/belay-classroom-roster-identity-v1",
+  "prior_preparation": "/private/tmp/educloud-identity-stage2-20261108/RESULTS.json",
+  "prior_failures_preserved": "output/roster-identity-v1/offline-preparation-20261108.zip",
+  "remote_refresh": "PR5 open draft exact base b4b2c3c; PR57 open draft e3840636; Cairn37 open unassigned without comments; no other open classroom PR",
+  "owner": "This development chat; parent explicitly handed off the implementation worktrees",
+  "outcome": "Typed existing roster labels reach actual Portage; authority-supplied generation change invalidates old execution references while legacy grants remain stable",
+  "reuse": "Existing RS256 verification, operator authorization file, current membership reread, execution references, scoped state and Portage ledger/HTTP gateway",
+  "edit_boundaries": [
+    "backend/app/auth.py",
+    "backend/tests/test_auth_isolation.py",
+    "backend/tests/test_portage_integration.py",
+    "backend/tests/test_execution_grants.py",
+    "backend/tests/test_execution_data.py",
+    "docs/development/classroom-roster-identity-v1*",
+    "deployment/portage/roster-identity-verification.json"
+  ],
+  "coordination_only": "Existing EduCloud full-stack record and PR57; no other application components changed",
+  "acceptance": [
+    "Actual authenticated classroom HTTP routes accept explicit roster namespace only",
+    "No generated or hashed learner mapping",
+    "Required opaque authority grant generation for new namespace",
+    "Changed generation invalidates old dispatch and private job access",
+    "Legacy authorization and references unchanged",
+    "Forged principal, wrong class, stale version and revocation refuse",
+    "Actual SDK/gateway requests and authority path counts; synthetic upstream only",
+    "Full SQLite, lint, format, mypy; exact-head hosted PostgreSQL and integration tracked separately"
+  ],
+  "limits": {
+    "focused_correction_rounds": 3,
+    "full_suite_seconds": 600,
+    "live_model_calls": 0,
+    "cloud_operations": 0,
+    "private_records": 0
+  },
+  "remaining_authority_gap": "Consumer cannot detect an operator rollback to an identical old authorization snapshot. Durable source generation, freshness, monotonic revocation and trusted Waypoint/Cairn binding remain unqualified.",
+  "publication": "Reviewable draft PR stacked on PR5; no automatic merge/deployment"
+}

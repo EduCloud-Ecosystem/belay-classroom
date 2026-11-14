@@ -1,0 +1,47 @@
+{
+  "status": "LOCAL_SYNTHETIC_PROVIDER_CONNECTION_PASSED",
+  "base": "dba982c3a20241a14f1322fa3acf38261442ba88",
+  "portage_revision": "79742746b10ace18e498111dd5a8f3227edd995c",
+  "environment": "CPython 3.12.13 macOS arm64; 56 version/hash locked dependencies",
+  "focused": {
+    "passed": 16,
+    "failed": 0,
+    "skipped": 0
+  },
+  "sqlite": {
+    "passed": 1082,
+    "failed": 0,
+    "skipped": 20
+  },
+  "lint": "PASS",
+  "format": "PASS",
+  "mypy": "PASS: 185 files",
+  "postgres": "NOT_RUN_LOCAL; existing hosted CI matrix required",
+  "browser": "NOT_RUN; no UI changes, presenter path still separate",
+  "real_model": "NOT_RUN",
+  "native_provider": "NOT_RUN",
+  "failures_retained": [
+    "initial.xml: six invalid synthetic ID setup errors",
+    "corrected.xml: six unchanged policy version setup errors",
+    "final-focused.xml: converted auth exception expectation",
+    "accepted-focused.xml and focused-v4.xml: 429 expectation",
+    "full-sqlite.xml: one new integration assertion failure; corrected separately"
+  ],
+  "raw_evidence": "Ignored output/portage-integration; evidence-manifest.json preserves digests",
+  "remaining": [
+    "Canonical identity binding, including legacy label mismatch",
+    "Authenticated receipt/status and monetary accounting cutover",
+    "Gateway format-parameter compatibility and model qualification",
+    "Presenter/browser integration and human/accessibility acceptance",
+    "Native Outfitter placement/expiry/cleanup and Waypoint admission"
+  ],
+  "files": {
+    "backend/app/agent/llm.py": "bc3a2673a7cbdadd3dc794b9cdcbf3cd02e9b726b130d7a2a932bd6495679a45",
+    "backend/app/config.py": "eb2047b9d5ec15699c215fae60af2e8c741833bb81dc5ef7bdc35b8de1d1f283",
+    "backend/app/controlled_runtime.py": "4cbb2a9a87dbc8e6a109d61e87c35039f2064827f3b0b8cdd5203f6ee261f35e",
+    "backend/app/preflight.py": "684a670f525b1d04cff91a2a816566f200207da8d6be8ec5596bfbbe94b791f5",
+    "backend/tests/test_portage_integration.py": "d8b19062562701095472456f4688037e7c93e0093534d721e4e7061be32e5ae6",
+    "deployment/portage/requirements.lock": "37fceed6273fcd647413d4e78cdd12b2177c586ec1d258b56d971b859f025a5f",
+    ".github/workflows/portage-integration.yml": "7ec03f2c84dc394e3d520241e0b0406373fef0694befdc0b57c92a0c4b2a81b1"
+  }
+}

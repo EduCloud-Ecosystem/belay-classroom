@@ -6,15 +6,18 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 import jwt
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .authority_state import Authority
+from .authority_state import check as check_authority
 from .config import settings
 
 
@@ -22,8 +25,31 @@ class Membership(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     institution_id: str = Field(pattern=r"^[a-zA-Z0-9_-]{1,64}$")
     class_id: str = Field(pattern=r"^[a-zA-Z0-9_-]{1,64}$")
-    learner_id: str = Field(pattern=r"^[a-z][a-z0-9_]*:[0-9]+$", max_length=64)
+    learner_id: str = Field(max_length=64)
+    # Only trusted authorization can select this namespace. A matching format
+    # does not prove Cairn provenance or current enrollment; the operator must
+    # supply the existing roster row, never derive it from a login or name.
+    learner_id_kind: Literal["host_numeric_v1", "cairn_roster_v1"] = "host_numeric_v1"
+    grant_generation: str | None = None
     assignments: dict[str, str]
+
+    @model_validator(mode="after")
+    def validate_learner_id(self) -> Self:
+        pattern = (
+            r"[0-9a-f]{32}"
+            if self.learner_id_kind == "cairn_roster_v1"
+            else r"[a-z][a-z0-9_]*:[0-9]+"
+        )
+        if not re.fullmatch(pattern, self.learner_id):
+            raise ValueError("learner label does not match its configured namespace")
+        if self.learner_id_kind == "cairn_roster_v1":
+            if self.grant_generation is None or not re.fullmatch(
+                r"[0-9a-f]{32}", self.grant_generation
+            ):
+                raise ValueError("roster grants require an authority-supplied generation")
+        elif self.grant_generation is not None:
+            raise ValueError("legacy grants do not support generation fencing")
+        return self
 
 
 class TeachingPolicy(BaseModel):
@@ -40,6 +66,7 @@ class Authorization(BaseModel):
     exercise_versions: dict[str, str]
     subjects: dict[str, list[Membership]]
     teaching_policies: dict[str, TeachingPolicy] = Field(default_factory=dict)
+    authority: Authority | None = None
 
 
 @dataclass(frozen=True)
@@ -221,7 +248,23 @@ def _configuration() -> tuple[str, Authorization]:
         public_key = load_pem_public_key(key.encode())
         if not isinstance(public_key, RSAPublicKey) or public_key.key_size < 2048:
             raise ValueError
-    except (OSError, ValueError, TypeError):
+        if settings.auth_authority_state_file or authorization.authority is not None:
+            if not settings.auth_authority_state_file or authorization.authority is None:
+                raise ValueError
+            if any(
+                m.learner_id_kind != "cairn_roster_v1"
+                for members in authorization.subjects.values()
+                for m in members
+            ):
+                raise ValueError
+            check_authority(
+                settings.auth_authority_state_file,
+                authorization.authority,
+                authorization.model_dump(),
+                settings.auth_issuer,
+                settings.auth_audience,
+            )
+    except (OSError, ValueError, TypeError, sqlite3.Error):
         raise HTTPException(503, "authentication not configured") from None
 
     return key, authorization
@@ -240,17 +283,21 @@ class ExecutionGrant(BaseModel):
 
 
 def _grant_ref(subject: str, member: Membership) -> str:
-    raw = json.dumps(
-        [
-            "belay-execution-grant-v1",
-            settings.auth_issuer,
-            settings.auth_audience,
-            subject,
-            member.institution_id,
-            member.class_id,
-            member.learner_id,
-        ]
-    )
+    binding: list[str | None] = [
+        "belay-execution-grant-v1",
+        settings.auth_issuer,
+        settings.auth_audience,
+        subject,
+        member.institution_id,
+        member.class_id,
+        member.learner_id,
+    ]
+    # Preserve every legacy reference. New roster grants bind the authority's
+    # generation so a renewal cannot sustain work admitted by the old grant.
+    # The authority must not reuse a generation or roll back its snapshots.
+    if member.learner_id_kind == "cairn_roster_v1":
+        binding.extend(["cairn-roster-grant-v1", member.grant_generation])
+    raw = json.dumps(binding)
     return hashlib.sha256(raw.encode()).hexdigest()
 
 

@@ -1,0 +1,33 @@
+name: Classroom Portage integration
+on:
+  push:
+    branches: ["codex/classroom-full-stack-v1"]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  synthetic-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: EduCloud-Ecosystem/portage
+          ref: 709f5aba85dd2e56f87e9f5c32a2ac7438268ee5
+          path: dependencies/portage
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.13'
+      - name: Install locked dependencies
+        run: python -m pip install --require-hashes -r deployment/portage/requirements.lock
+      - name: Exercise actual gateway with synthetic upstream only
+        env:
+          PORTAGE_CHECKOUT: ${{ github.workspace }}/dependencies/portage
+        run: python -m pytest -q backend/tests/test_portage_integration.py backend/tests/test_system_one_portage.py --junitxml=output/portage-integration/ci.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: synthetic-portage-integration
+          path: output/portage-integration/
