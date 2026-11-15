@@ -31,3 +31,9 @@ and the next concrete action. Recheck current state before using it later.
 Fieldwork may help locate results and review notes. Read the underlying evidence
 before relying on a result. Its review marks don't establish acceptance,
 merge, deployment, or live readiness. Keep merge/release approval distinct.
+
+## Shared classroom pilot protocol
+
+Follow [the EduCloud pilot protocol](docs/development/PILOT_PROTOCOL_V1.md) alongside stricter component guidance and path licenses. It covers ownership, scoped implementation, independent tests, recovery, evidence and bounded agent maintenance. The local digest and actual workflow inventory are in `.github/educloud/component.json`; run `python3 .github/educloud/verify.py`.
+
+Use [EduCloud's integration guide](https://github.com/EduCloud-Ecosystem/educloud/blob/main/docs/pilot/INTEGRATION.md) and [central status](https://github.com/EduCloud-Ecosystem/educloud#pilot-status) for cross-component context. Keep local tests, CI, merge, deployment and real-user acceptance distinct. Automated reviewers cannot authorize spending, merge, cloud resources or student admission. Preserve other owners' work and retained failures.
