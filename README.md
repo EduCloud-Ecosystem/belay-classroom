@@ -1,5 +1,17 @@
 # Belay Classroom
 
+
+<!-- educloud-status-badges:start -->
+[![License](https://img.shields.io/github/license/EduCloud-Ecosystem/belay-classroom)](https://github.com/EduCloud-Ecosystem/belay-classroom/blob/main/LICENSING.md)
+[![CI and tests](https://github.com/EduCloud-Ecosystem/belay-classroom/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/EduCloud-Ecosystem/belay-classroom/actions/workflows/ci.yml)
+[![Open issues](https://img.shields.io/github/issues/EduCloud-Ecosystem/belay-classroom)](https://github.com/EduCloud-Ecosystem/belay-classroom/issues)
+[![Sonar quality gate (advisory)](https://sonarcloud.io/api/project_badges/measure?project=EduCloud-Ecosystem_belay-classroom&metric=alert_status)](https://sonarcloud.io/dashboard?id=EduCloud-Ecosystem_belay-classroom)
+[![CodeRabbit advisory review](https://img.shields.io/badge/CodeRabbit-advisory-orange)](https://github.com/EduCloud-Ecosystem/belay-classroom/blob/main/.coderabbit.yaml)
+[![Contributing](https://img.shields.io/badge/contributions-guide-blue)](https://github.com/EduCloud-Ecosystem/belay-classroom/blob/main/CONTRIBUTING.md)
+<!-- educloud-status-badges:end -->
+
+Review checks are advisory; badges do not certify deployment or classroom readiness.
+
 An AI-native classroom demonstration derived from [Belay](https://github.com/EduCloud-Ecosystem/belay). The initial activity combines independent notebook work, hints-only tutoring, explicit submission, and private guidance that supports remediation. It uses synthetic identities and data.
 
 This repository is the home for new classroom-specific work. Belay remains separate. Start with [the current change record](docs/development/classroom-b1.md) and [the focused workflow](docs/development/codex-workflow.md).
