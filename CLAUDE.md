@@ -78,3 +78,7 @@ verified. Never omit the Report section.
 - `ROADMAP.md` — every item is cited to an in-tree source; keep that
   discipline when adding to it
 - `docs/prompts/CC-B1`–`CC-B4` — prompts executed so far
+
+## Pilot implementation standard
+
+Follow `AGENTS.md` and `docs/development/PILOT_PROTOCOL_V1.md` in addition to this component guidance. The classroom pilot tutor is `belay-classroom`; original Belay is a separate line. Current integration and release evidence live in the educloud README and `pilot/` records.
