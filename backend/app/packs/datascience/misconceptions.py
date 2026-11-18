@@ -200,10 +200,30 @@ CROSS_CUTTING: ConceptEntry = {
 }
 
 
+_NHANES: ConceptEntry = {
+    "concept": "Participant records and missing measurements",
+    "expectations": ["Use the original component table to investigate a blank reading."],
+    "misconceptions": [
+        {
+            "id": "DS-nhanes-blank-record",
+            "belief": "A blank reading always means the participant has no BPXO record.",
+            "signature": "Learner asks how to distinguish a missing reading from a missing BPXO record.",
+            "peer_move": (
+                "Give exactly one check the learner can perform now: choose one blank reading "
+                "and look for that participant's SEQN in the original BPXO table. Ask what "
+                "they observe. Stop there. Leave the interpretation, code, counts and labels "
+                "to the learner."
+            ),
+            "inventory_seed": "A blank systolic reading proves the participant has no BPXO row.",
+        },
+    ],
+}
+
 _BY_EXERCISE: dict[str, ConceptEntry] = {
     "ds-foundations": _FOUNDATIONS,
     "ds-regression": _REGRESSION,
     "ds-mlp": _MLP,
+    "info511-nhanes-wrangling": _NHANES,
 }
 
 

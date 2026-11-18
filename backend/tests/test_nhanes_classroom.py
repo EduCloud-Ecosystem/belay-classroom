@@ -14,12 +14,23 @@ from app.classroom.demo import authorization
 from app.classroom.live_runner import checked_inputs, checked_verdict
 from app.classroom.nhanes_csv_check import SOURCES, check_csv
 from app.controls.contracts import ControlError
-from app.packs.datascience import grader
+from app.packs.datascience import grader, misconceptions
 from app.packs.datascience._harness import _run_check
 from app.packs.datascience.nhanes_check import COLUMNS, READINGS, SUCCESS, check_nhanes
 from tests.classroom_offline import deny_external  # noqa: F401
 
 ROOT = Path(__file__).parents[1] / "app/packs/datascience"
+
+
+def test_missing_record_hint_gives_one_source_lookup_only_in_the_nhanes_exercise():
+    move_id = "DS-nhanes-blank-record"
+    moves = misconceptions.for_exercise("info511-nhanes-wrangling")["misconceptions"]
+    move = next(m["peer_move"] for m in moves if m["id"] == move_id)
+    assert "one blank reading" in move and "SEQN" in move and "original BPXO" in move
+    assert not any(answer in move for answer in ("no_BPXO_record", ".merge(", ".isin(", "192"))
+    assert all(
+        m["id"] != move_id for m in misconceptions.for_exercise("ds-foundations")["misconceptions"]
+    )
 
 
 def case():

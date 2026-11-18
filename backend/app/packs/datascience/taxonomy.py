@@ -130,6 +130,7 @@ MISCONCEPTION_CONCEPT: dict[str, str] = {
     "DS-broadcasting-shape": "broadcasting",
     "DS-learning-rate": "learning-rate",
     "DS-mean-vs-median": "summary-statistics",
+    "DS-nhanes-blank-record": "missing-data",
     "DS-missing-drop": "missing-data",
     "DS-groupby-reset": "grouping-aggregation",
     "DS-apply-loop": "apply-map",
