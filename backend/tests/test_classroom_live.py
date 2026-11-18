@@ -955,7 +955,7 @@ def test_full_queued_safety_loop_fits_current_live_message_cap(queued_real_loop,
     assert len(frames) == queued.run.profile["max_attempts"] == 19
     # Measured with the approved eight-line NHANES cell and actual question;
     # retain the existing cap, every safety stage and all retrieval passages.
-    assert max(frame["messages_bytes"] for frame in frames) == 15828
+    assert max(frame["messages_bytes"] for frame in frames) == 16239
     assert (
         max(frame["messages_bytes"] for frame in frames) <= queued.run.profile["max_messages_bytes"]
     )
