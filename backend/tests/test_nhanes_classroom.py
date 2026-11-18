@@ -9,12 +9,13 @@ from types import SimpleNamespace as NS
 import pandas as pd
 import pytest
 
+from app.agent import reasoner
 from app.classroom.assignments import NHANES
 from app.classroom.demo import authorization
 from app.classroom.live_runner import checked_inputs, checked_verdict
 from app.classroom.nhanes_csv_check import SOURCES, check_csv
 from app.controls.contracts import ControlError
-from app.packs.datascience import grader, misconceptions
+from app.packs.datascience import DataSciencePack, grader, misconceptions
 from app.packs.datascience._harness import _run_check
 from app.packs.datascience.nhanes_check import COLUMNS, READINGS, SUCCESS, check_nhanes
 from tests.classroom_offline import deny_external  # noqa: F401
@@ -31,6 +32,31 @@ def test_missing_record_hint_gives_one_source_lookup_only_in_the_nhanes_exercise
     assert all(
         m["id"] != move_id for m in misconceptions.for_exercise("ds-foundations")["misconceptions"]
     )
+
+
+def test_prepared_peer_question_replaces_a_vague_draft_before_evaluation(monkeypatch):
+    monkeypatch.setattr(reasoner, "get_active_pack", DataSciencePack)
+    question = json.loads(
+        (Path(__file__).parent / "fixtures/classroom/nhanes-turn.json").read_text()
+    )["message"]
+    ctx = {
+        "event": "chat",
+        "mode": "study",
+        "last_result": "no run yet",
+        "_exercise_full": {"id": "info511-nhanes-wrangling"},
+        "recent_dialogue": [{"who": "student", "text": question}],
+    }
+    llm = NS(json=lambda **kw: {"message": "What do you think?", "check_question": "Any ideas?"})
+    plan = {"intervention": "reciprocate"}
+    reply = reasoner.respond(ctx, plan, llm)
+    assert reply["message"] == "Course hint: " + misconceptions.NHANES_SOURCE_CHECK
+    assert reply["check_question"] is None
+    assert reasoner.respond(ctx, plan, llm, stance="oracle")["message"] == "What do you think?"
+    assert (
+        reasoner.respond(ctx, {"intervention": "escalate"}, llm)["message"] == "What do you think?"
+    )
+    ctx["recent_dialogue"].append({"who": "student", "text": "What about this second row?"})
+    assert reasoner.respond(ctx, plan, llm)["message"] == "What do you think?"
 
 
 def case():

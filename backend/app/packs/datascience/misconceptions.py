@@ -200,6 +200,11 @@ CROSS_CUTTING: ConceptEntry = {
 }
 
 
+NHANES_SOURCE_CHECK = (
+    "Pick one blank reading in your merged table. Look for its SEQN in the original BPXO table. "
+    "What do you see?"
+)
+
 _NHANES: ConceptEntry = {
     "concept": "Participant records and missing measurements",
     "expectations": ["Trace a blank to its source."],
@@ -208,10 +213,7 @@ _NHANES: ConceptEntry = {
             "id": "DS-nhanes-blank-record",
             "belief": "Blank reading implies no BPXO row.",
             "signature": "Asks about blank readings versus missing rows.",
-            "peer_move": (
-                "Use this hint verbatim and stop: Pick one blank reading in your merged table. "
-                "Look for its SEQN in the original BPXO table. What do you see?"
-            ),
+            "peer_move": "Use this hint verbatim and stop: " + NHANES_SOURCE_CHECK,
             "inventory_seed": "A blank systolic reading proves the participant has no BPXO row.",
         },
     ],

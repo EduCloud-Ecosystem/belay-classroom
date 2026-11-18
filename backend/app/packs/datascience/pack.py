@@ -75,6 +75,12 @@ class DataSciencePack:
 
     id = "datascience"
     persona = ROBIN_PERSONA
+    first_peer_hints = {
+        (
+            "info511-nhanes-wrangling",
+            "How can I tell a missing reading from a participant with no matching BPXO record?",
+        ): _mis.NHANES_SOURCE_CHECK,
+    }
 
     def __init__(self) -> None:
         self.taxonomy: Taxonomy = build_taxonomy()

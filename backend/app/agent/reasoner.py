@@ -31,7 +31,8 @@ def respond(
     the orchestrator runs the reasoner at a default effort and re-runs it at a
     higher effort when self-evaluation is under-confident (escalation). Applied
     identically for peer and oracle so capability is held constant across stances."""
-    persona = get_active_pack().persona
+    pack = get_active_pack()
+    persona = pack.persona
     base = reasoner_system(persona, stance, goals=ctx.get("goals"), overlay=ctx.get("overlay"))
     system = base + (("\n\n" + TEACH_ADDENDUM) if ctx["mode"] == "teach" else "")
     if ctx.get("quoted_prior_reply"):
@@ -76,6 +77,29 @@ def respond(
         max_tokens=800,
         reasoning_effort=reasoning_effort,
     )
+    # An exercise can supply one reviewed observation for its opening question.
+    # Evaluate the exact wording shown to the learner through the usual rubric
+    # and governance gates. Follow-ups and worked examples keep their own path.
+    dialogue = ctx.get("recent_dialogue", [])
+    if (
+        stance == "peer"
+        and ctx["mode"] == "study"
+        and ctx.get("event") == "chat"
+        and ctx.get("last_result") == "no run yet"
+        and not ctx.get("quoted_prior_reply")
+        and len(dialogue) == 1
+        and plan.get("intervention") in {"reciprocate", "co_reason", "diagnose", "observe"}
+        and out.get("message")
+    ):
+        key = (ctx.get("_exercise_full", {}).get("id"), ctx_mod._latest_student_message(dialogue))
+        hint = getattr(pack, "first_peer_hints", {}).get(key)
+        if hint:
+            out = {
+                **out,
+                "message": "Course hint: " + hint,
+                "check_question": None,
+                "worked_example": None,
+            }
     return {
         "message": out.get("message", ""),
         "check_question": out.get("check_question"),
