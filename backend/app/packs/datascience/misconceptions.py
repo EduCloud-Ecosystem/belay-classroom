@@ -202,17 +202,15 @@ CROSS_CUTTING: ConceptEntry = {
 
 _NHANES: ConceptEntry = {
     "concept": "Participant records and missing measurements",
-    "expectations": ["Use the original component table to investigate a blank reading."],
+    "expectations": ["Trace a blank to its source."],
     "misconceptions": [
         {
             "id": "DS-nhanes-blank-record",
-            "belief": "A blank reading always means the participant has no BPXO record.",
-            "signature": "Learner asks how to distinguish a missing reading from a missing BPXO record.",
+            "belief": "Blank reading implies no BPXO row.",
+            "signature": "Asks about blank readings versus missing rows.",
             "peer_move": (
-                "Give exactly one check the learner can perform now: choose one blank reading "
-                "and look for that participant's SEQN in the original BPXO table. Ask what "
-                "they observe. Stop there. Leave the interpretation, code, counts and labels "
-                "to the learner."
+                "For one blank reading, ask them to look up its SEQN in the original BPXO table. "
+                "Ask what they see. Stop before code or interpretation."
             ),
             "inventory_seed": "A blank systolic reading proves the participant has no BPXO row.",
         },
