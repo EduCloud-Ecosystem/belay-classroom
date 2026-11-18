@@ -209,8 +209,8 @@ _NHANES: ConceptEntry = {
             "belief": "Blank reading implies no BPXO row.",
             "signature": "Asks about blank readings versus missing rows.",
             "peer_move": (
-                "For one blank reading, ask them to look up its SEQN in the original BPXO table. "
-                "Ask what they see. Stop before code or interpretation."
+                "Use this hint verbatim and stop: Pick one blank reading in your merged table. "
+                "Look for its SEQN in the original BPXO table. What do you see?"
             ),
             "inventory_seed": "A blank systolic reading proves the participant has no BPXO row.",
         },
